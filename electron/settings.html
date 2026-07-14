@@ -71,6 +71,12 @@
             color: #a9b9c4;
         }
 
+        .reorder-help {
+            margin-top: 10px;
+            color: #7fcff0;
+            font-size: 13px;
+        }
+
         .program-list {
             display: grid;
             gap: 14px;
@@ -87,6 +93,25 @@
                 rgba(255, 255, 255, 0.06);
 
             border-radius: 12px;
+
+            transition:
+                opacity 150ms ease,
+                border-color 150ms ease,
+                transform 150ms ease,
+                box-shadow 150ms ease;
+        }
+
+        .program-setting.dragging {
+            opacity: 0.45;
+            transform: scale(0.985);
+        }
+
+        .program-setting.drag-over {
+            border-color: #00bfff;
+
+            box-shadow:
+                0 0 16px
+                rgba(0, 191, 255, 0.25);
         }
 
         .program-header {
@@ -98,9 +123,49 @@
             margin-bottom: 14px;
         }
 
+        .program-title-row {
+            min-width: 0;
+
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .drag-handle {
+            flex: 0 0 auto;
+
+            padding: 6px 8px;
+
+            color: #67dfff;
+            font-size: 20px;
+            line-height: 1;
+
+            background:
+                rgba(0, 191, 255, 0.08);
+
+            border:
+                1px solid
+                rgba(0, 191, 255, 0.18);
+
+            border-radius: 8px;
+
+            cursor: grab;
+            user-select: none;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
         .program-title {
+            min-width: 0;
             margin: 0;
+
+            overflow: hidden;
+
             font-size: 17px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .field {
@@ -140,7 +205,8 @@
         }
 
         input:focus {
-            outline: 2px solid
+            outline:
+                2px solid
                 rgba(0, 191, 255, 0.4);
 
             border-color: #00bfff;
@@ -172,6 +238,19 @@
             padding: 8px 12px;
 
             background: #742f3b;
+            color: white;
+        }
+
+        .move-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .move-button {
+            min-width: 38px;
+            padding: 8px 10px;
+
+            background: #293945;
             color: white;
         }
 
@@ -232,7 +311,12 @@
             <h1>⚙ Paramètres</h1>
 
             <div class="subtitle">
-                Ajouter, modifier ou supprimer des logiciels
+                Ajouter, modifier, supprimer ou réorganiser les logiciels
+            </div>
+
+            <div class="reorder-help">
+                Fais glisser une carte avec la poignée ☰,
+                ou utilise les flèches.
             </div>
         </header>
 
@@ -286,6 +370,7 @@
             );
 
         let programs = [];
+        let draggedProgramId = null;
 
 
         function showMessage(
@@ -321,16 +406,25 @@
         }
 
 
-        function createUniqueId(name) {
+        function createUniqueId(
+            name,
+            ignoredId = null
+        ) {
             const baseId =
                 generateSlug(name) ||
                 "logiciel";
 
             const existingIds =
                 new Set(
-                    programs.map(
-                        program => program.id
-                    )
+                    programs
+                        .filter(
+                            program =>
+                                program.id !== ignoredId
+                        )
+                        .map(
+                            program =>
+                                program.id
+                        )
                 );
 
             let candidate = baseId;
@@ -389,21 +483,239 @@
         }
 
 
+        function moveProgram(
+            programId,
+            direction
+        ) {
+            const currentIndex =
+                programs.findIndex(
+                    program =>
+                        program.id === programId
+                );
+
+            if (currentIndex < 0) {
+                return;
+            }
+
+            const targetIndex =
+                currentIndex + direction;
+
+            if (
+                targetIndex < 0 ||
+                targetIndex >= programs.length
+            ) {
+                return;
+            }
+
+            const [movedProgram] =
+                programs.splice(
+                    currentIndex,
+                    1
+                );
+
+            programs.splice(
+                targetIndex,
+                0,
+                movedProgram
+            );
+
+            renderPrograms();
+
+            showMessage(
+                "Ordre modifié. Clique sur Enregistrer pour confirmer."
+            );
+        }
+
+
+        function reorderPrograms(
+            sourceId,
+            targetId
+        ) {
+            if (
+                !sourceId ||
+                !targetId ||
+                sourceId === targetId
+            ) {
+                return;
+            }
+
+            const sourceIndex =
+                programs.findIndex(
+                    program =>
+                        program.id === sourceId
+                );
+
+            const targetIndex =
+                programs.findIndex(
+                    program =>
+                        program.id === targetId
+                );
+
+            if (
+                sourceIndex < 0 ||
+                targetIndex < 0
+            ) {
+                return;
+            }
+
+            const [movedProgram] =
+                programs.splice(
+                    sourceIndex,
+                    1
+                );
+
+            programs.splice(
+                targetIndex,
+                0,
+                movedProgram
+            );
+
+            renderPrograms();
+
+            showMessage(
+                "Ordre modifié. Clique sur Enregistrer pour confirmer."
+            );
+        }
+
+
+        function configureDragAndDrop(
+            card,
+            program
+        ) {
+            const dragHandle =
+                card.querySelector(
+                    ".drag-handle"
+                );
+
+            dragHandle.draggable = true;
+
+            dragHandle.addEventListener(
+                "dragstart",
+                event => {
+                    draggedProgramId =
+                        program.id;
+
+                    card.classList.add(
+                        "dragging"
+                    );
+
+                    event.dataTransfer.effectAllowed =
+                        "move";
+
+                    event.dataTransfer.setData(
+                        "text/plain",
+                        program.id
+                    );
+                }
+            );
+
+            dragHandle.addEventListener(
+                "dragend",
+                () => {
+                    draggedProgramId = null;
+
+                    document
+                        .querySelectorAll(
+                            ".program-setting"
+                        )
+                        .forEach(element => {
+                            element.classList.remove(
+                                "dragging",
+                                "drag-over"
+                            );
+                        });
+                }
+            );
+
+            card.addEventListener(
+                "dragover",
+                event => {
+                    event.preventDefault();
+
+                    event.dataTransfer.dropEffect =
+                        "move";
+
+                    if (
+                        draggedProgramId &&
+                        draggedProgramId !==
+                            program.id
+                    ) {
+                        card.classList.add(
+                            "drag-over"
+                        );
+                    }
+                }
+            );
+
+            card.addEventListener(
+                "dragleave",
+                () => {
+                    card.classList.remove(
+                        "drag-over"
+                    );
+                }
+            );
+
+            card.addEventListener(
+                "drop",
+                event => {
+                    event.preventDefault();
+
+                    card.classList.remove(
+                        "drag-over"
+                    );
+
+                    const sourceId =
+                        event.dataTransfer.getData(
+                            "text/plain"
+                        ) ||
+                        draggedProgramId;
+
+                    reorderPrograms(
+                        sourceId,
+                        program.id
+                    );
+                }
+            );
+        }
+
+
         function createProgramCard(
             program,
             index
         ) {
             const card =
-                document.createElement("article");
+                document.createElement(
+                    "article"
+                );
 
             card.className =
                 "program-setting";
+
+            card.dataset.programId =
+                program.id;
 
             const header =
                 document.createElement("div");
 
             header.className =
                 "program-header";
+
+            const titleRow =
+                document.createElement("div");
+
+            titleRow.className =
+                "program-title-row";
+
+            const dragHandle =
+                document.createElement("span");
+
+            dragHandle.className =
+                "drag-handle";
+
+            dragHandle.textContent = "☰";
+            dragHandle.title =
+                "Faire glisser pour réorganiser";
 
             const title =
                 document.createElement("h2");
@@ -416,10 +728,76 @@
                 program
             );
 
+            titleRow.appendChild(
+                dragHandle
+            );
+
+            titleRow.appendChild(
+                title
+            );
+
+            const headerActions =
+                document.createElement("div");
+
+            headerActions.className =
+                "move-buttons";
+
+            const moveUpButton =
+                document.createElement("button");
+
+            moveUpButton.type = "button";
+
+            moveUpButton.className =
+                "move-button";
+
+            moveUpButton.textContent = "↑";
+            moveUpButton.title =
+                "Monter";
+
+            moveUpButton.disabled =
+                index === 0;
+
+            moveUpButton.addEventListener(
+                "click",
+                () => {
+                    moveProgram(
+                        program.id,
+                        -1
+                    );
+                }
+            );
+
+            const moveDownButton =
+                document.createElement("button");
+
+            moveDownButton.type = "button";
+
+            moveDownButton.className =
+                "move-button";
+
+            moveDownButton.textContent = "↓";
+            moveDownButton.title =
+                "Descendre";
+
+            moveDownButton.disabled =
+                index ===
+                programs.length - 1;
+
+            moveDownButton.addEventListener(
+                "click",
+                () => {
+                    moveProgram(
+                        program.id,
+                        1
+                    );
+                }
+            );
+
             const deleteButton =
                 document.createElement("button");
 
             deleteButton.type = "button";
+
             deleteButton.className =
                 "delete-button";
 
@@ -455,12 +833,29 @@
                 }
             );
 
-            header.appendChild(title);
-            header.appendChild(
+            headerActions.appendChild(
+                moveUpButton
+            );
+
+            headerActions.appendChild(
+                moveDownButton
+            );
+
+            headerActions.appendChild(
                 deleteButton
             );
 
-            card.appendChild(header);
+            header.appendChild(
+                titleRow
+            );
+
+            header.appendChild(
+                headerActions
+            );
+
+            card.appendChild(
+                header
+            );
 
 
             const nameField =
@@ -546,6 +941,7 @@
                 "click",
                 async () => {
                     browseButton.disabled = true;
+
                     browseButton.textContent =
                         "Ouverture...";
 
@@ -600,7 +996,8 @@
                             program.id =
                                 createUniqueId(
                                     program.name ||
-                                    result.suggestedName
+                                    result.suggestedName,
+                                    program.id
                                 );
                         }
 
@@ -615,7 +1012,9 @@
                             true
                         );
                     } finally {
-                        browseButton.disabled = false;
+                        browseButton.disabled =
+                            false;
+
                         browseButton.textContent =
                             "Parcourir";
                     }
@@ -664,9 +1063,8 @@
                     program.processNames =
                         event.target.value
                             .split(",")
-                            .map(
-                                value =>
-                                    value.trim()
+                            .map(value =>
+                                value.trim()
                             )
                             .filter(Boolean);
                 }
@@ -679,6 +1077,11 @@
 
             card.appendChild(
                 processField.field
+            );
+
+            configureDragAndDrop(
+                card,
+                program
             );
 
             return card;
@@ -781,25 +1184,16 @@
 
                     renderPrograms();
 
-                    const nameInputs =
-                        document.querySelectorAll(
-                            ".program-setting input"
+                    const lastCard =
+                        programListElement
+                            .lastElementChild;
+
+                    const firstInput =
+                        lastCard?.querySelector(
+                            "input"
                         );
 
-                    if (
-                        nameInputs.length > 0
-                    ) {
-                        const lastCard =
-                            programListElement
-                                .lastElementChild;
-
-                        const firstInput =
-                            lastCard?.querySelector(
-                                "input"
-                            );
-
-                        firstInput?.focus();
-                    }
+                    firstInput?.focus();
 
                     showMessage(
                         "Nouvelle ligne ajoutée."
@@ -812,10 +1206,14 @@
             "click",
             async () => {
                 saveButton.disabled = true;
+
                 saveButton.textContent =
                     "Enregistrement...";
 
                 try {
+                    const usedIds =
+                        new Set();
+
                     for (
                         const program
                         of programs
@@ -826,6 +1224,14 @@
                             ).trim();
 
                         if (
+                            !program.name
+                        ) {
+                            throw new Error(
+                                "Chaque logiciel doit avoir un nom."
+                            );
+                        }
+
+                        if (
                             !program.id ||
                             program.id.startsWith(
                                 "nouveau-"
@@ -833,17 +1239,26 @@
                         ) {
                             program.id =
                                 createUniqueId(
-                                    program.name
+                                    program.name,
+                                    program.id
                                 );
                         }
 
                         if (
-                            !program.name
+                            usedIds.has(
+                                program.id
+                            )
                         ) {
-                            throw new Error(
-                                "Chaque logiciel doit avoir un nom."
-                            );
+                            program.id =
+                                createUniqueId(
+                                    program.name,
+                                    program.id
+                                );
                         }
+
+                        usedIds.add(
+                            program.id
+                        );
 
                         if (
                             !program.useShellApp &&
@@ -872,7 +1287,7 @@
                     }
 
                     showMessage(
-                        "Configuration enregistrée."
+                        "Configuration et ordre enregistrés."
                     );
                 } catch (error) {
                     console.error(error);
@@ -882,7 +1297,9 @@
                         true
                     );
                 } finally {
-                    saveButton.disabled = false;
+                    saveButton.disabled =
+                        false;
+
                     saveButton.textContent =
                         "Enregistrer";
                 }
