@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Paramètres — SkyDeck Live</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+
+            background:
+                radial-gradient(
+                    circle at top,
+                    #12324a,
+                    #081018 68%
+                );
+
+            color: white;
+
+            font-family:
+                "Segoe UI",
+                Arial,
+                sans-serif;
+        }
+
+        .settings {
+            width: min(900px, 100%);
+            margin: 0 auto;
+            padding: 30px;
+
+            background:
+                rgba(8, 16, 24, 0.96);
+
+            border: 2px solid #00bfff;
+            border-radius: 22px;
+
+            box-shadow:
+                0 0 30px
+                rgba(0, 191, 255, 0.3);
+        }
+
+        header {
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .airline {
+            color: #67dfff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+
+        h1 {
+            margin: 10px 0 6px;
+        }
+
+        .subtitle {
+            color: #a9b9c4;
+        }
+
+        .program-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .program-setting {
+            padding: 18px;
+
+            background:
+                rgba(255, 255, 255, 0.05);
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.06);
+
+            border-radius: 12px;
+        }
+
+        .program-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+
+            margin-bottom: 14px;
+        }
+
+        .program-title {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .field {
+            margin-top: 12px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+
+            color: #b9c8d2;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .path-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+        }
+
+        input {
+            width: 100%;
+            min-width: 0;
+            padding: 11px 12px;
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.14);
+
+            border-radius: 9px;
+
+            background: #101b24;
+            color: white;
+
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: 2px solid
+                rgba(0, 191, 255, 0.4);
+
+            border-color: #00bfff;
+        }
+
+        button {
+            padding: 11px 18px;
+
+            border: 0;
+            border-radius: 9px;
+
+            background: #00bfff;
+            color: #041018;
+
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        button:hover:not(:disabled) {
+            filter: brightness(1.12);
+        }
+
+        button:disabled {
+            cursor: default;
+            opacity: 0.55;
+        }
+
+        .delete-button {
+            padding: 8px 12px;
+
+            background: #742f3b;
+            color: white;
+        }
+
+        .add-button {
+            width: 100%;
+            margin-top: 18px;
+
+            background: #1e8f62;
+            color: white;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+
+            margin-top: 24px;
+        }
+
+        .secondary {
+            background: #293945;
+            color: white;
+        }
+
+        #message {
+            min-height: 24px;
+            margin-top: 16px;
+
+            color: #49e58b;
+            text-align: center;
+        }
+
+        #message.error {
+            color: #ff7b7b;
+        }
+
+        .empty-message {
+            padding: 24px;
+
+            color: #94a6b2;
+            text-align: center;
+
+            background:
+                rgba(255, 255, 255, 0.04);
+
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="settings">
+        <header>
+            <div class="airline">
+                SKYDECK AIRLINES
+            </div>
+
+            <h1>⚙ Paramètres</h1>
+
+            <div class="subtitle">
+                Ajouter, modifier ou supprimer des logiciels
+            </div>
+        </header>
+
+        <section
+            id="programList"
+            class="program-list"
+        ></section>
+
+        <button
+            id="addProgram"
+            class="add-button"
+            type="button"
+        >
+            ➕ Ajouter un logiciel
+        </button>
+
+        <div class="actions">
+            <button
+                id="closeSettings"
+                class="secondary"
+                type="button"
+            >
+                Fermer
+            </button>
+
+            <button
+                id="saveSettings"
+                type="button"
+            >
+                Enregistrer
+            </button>
+        </div>
+
+        <div id="message"></div>
+    </main>
+
+    <script>
+        const programListElement =
+            document.getElementById(
+                "programList"
+            );
+
+        const messageElement =
+            document.getElementById(
+                "message"
+            );
+
+        const saveButton =
+            document.getElementById(
+                "saveSettings"
+            );
+
+        let programs = [];
+
+
+        function showMessage(
+            message,
+            isError = false
+        ) {
+            messageElement.textContent =
+                message;
+
+            messageElement.classList.toggle(
+                "error",
+                isError
+            );
+        }
+
+
+        function generateSlug(value) {
+            return String(value || "")
+                .normalize("NFD")
+                .replace(
+                    /[\u0300-\u036f]/g,
+                    ""
+                )
+                .toLowerCase()
+                .replace(
+                    /[^a-z0-9]+/g,
+                    "-"
+                )
+                .replace(
+                    /^-+|-+$/g,
+                    ""
+                );
+        }
+
+
+        function createUniqueId(name) {
+            const baseId =
+                generateSlug(name) ||
+                "logiciel";
+
+            const existingIds =
+                new Set(
+                    programs.map(
+                        program => program.id
+                    )
+                );
+
+            let candidate = baseId;
+            let number = 2;
+
+            while (
+                existingIds.has(candidate)
+            ) {
+                candidate =
+                    `${baseId}-${number}`;
+
+                number += 1;
+            }
+
+            return candidate;
+        }
+
+
+        function updateProgramTitle(
+            titleElement,
+            program
+        ) {
+            titleElement.textContent =
+                program.name.trim() ||
+                "Nouveau logiciel";
+        }
+
+
+        function createField(
+            labelText,
+            value
+        ) {
+            const field =
+                document.createElement("div");
+
+            field.className = "field";
+
+            const label =
+                document.createElement("label");
+
+            label.textContent = labelText;
+
+            const input =
+                document.createElement("input");
+
+            input.type = "text";
+            input.value = value || "";
+
+            field.appendChild(label);
+            field.appendChild(input);
+
+            return {
+                field,
+                input
+            };
+        }
+
+
+        function createProgramCard(
+            program,
+            index
+        ) {
+            const card =
+                document.createElement("article");
+
+            card.className =
+                "program-setting";
+
+            const header =
+                document.createElement("div");
+
+            header.className =
+                "program-header";
+
+            const title =
+                document.createElement("h2");
+
+            title.className =
+                "program-title";
+
+            updateProgramTitle(
+                title,
+                program
+            );
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.type = "button";
+            deleteButton.className =
+                "delete-button";
+
+            deleteButton.textContent =
+                "Supprimer";
+
+            deleteButton.addEventListener(
+                "click",
+                () => {
+                    const name =
+                        program.name ||
+                        "ce logiciel";
+
+                    const confirmed =
+                        window.confirm(
+                            `Supprimer ${name} de la liste ?`
+                        );
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    programs.splice(
+                        index,
+                        1
+                    );
+
+                    renderPrograms();
+
+                    showMessage(
+                        "Logiciel retiré. Clique sur Enregistrer pour confirmer."
+                    );
+                }
+            );
+
+            header.appendChild(title);
+            header.appendChild(
+                deleteButton
+            );
+
+            card.appendChild(header);
+
+
+            const nameField =
+                createField(
+                    "Nom du logiciel",
+                    program.name
+                );
+
+            nameField.input.addEventListener(
+                "input",
+                event => {
+                    program.name =
+                        event.target.value;
+
+                    updateProgramTitle(
+                        title,
+                        program
+                    );
+                }
+            );
+
+            card.appendChild(
+                nameField.field
+            );
+
+
+            const pathField =
+                document.createElement("div");
+
+            pathField.className = "field";
+
+            const pathLabel =
+                document.createElement("label");
+
+            pathLabel.textContent =
+                program.useShellApp
+                    ? "Application Windows intégrée"
+                    : "Chemin du programme";
+
+            const pathRow =
+                document.createElement("div");
+
+            pathRow.className =
+                "path-row";
+
+            const pathInput =
+                document.createElement("input");
+
+            pathInput.type = "text";
+
+            pathInput.value =
+                program.useShellApp
+                    ? program.appId || ""
+                    : program.path || "";
+
+            pathInput.readOnly =
+                Boolean(
+                    program.useShellApp
+                );
+
+            pathInput.addEventListener(
+                "input",
+                event => {
+                    program.path =
+                        event.target.value;
+                }
+            );
+
+            const browseButton =
+                document.createElement("button");
+
+            browseButton.type = "button";
+
+            browseButton.textContent =
+                "Parcourir";
+
+            browseButton.disabled =
+                Boolean(
+                    program.useShellApp
+                );
+
+            browseButton.addEventListener(
+                "click",
+                async () => {
+                    browseButton.disabled = true;
+                    browseButton.textContent =
+                        "Ouverture...";
+
+                    try {
+                        const result =
+                            await window
+                                .skyDeckAPI
+                                .browseProgram(
+                                    pathInput.value
+                                );
+
+                        if (
+                            !result.success
+                        ) {
+                            return;
+                        }
+
+                        pathInput.value =
+                            result.path;
+
+                        program.path =
+                            result.path;
+
+                        program.processNames = [
+                            result.processName
+                        ];
+
+                        processInput.value =
+                            result.processName;
+
+                        if (
+                            !program.name.trim()
+                        ) {
+                            program.name =
+                                result.suggestedName;
+
+                            nameField.input.value =
+                                result.suggestedName;
+
+                            updateProgramTitle(
+                                title,
+                                program
+                            );
+                        }
+
+                        if (
+                            !program.id ||
+                            program.id.startsWith(
+                                "nouveau-"
+                            )
+                        ) {
+                            program.id =
+                                createUniqueId(
+                                    program.name ||
+                                    result.suggestedName
+                                );
+                        }
+
+                        showMessage(
+                            "Programme sélectionné."
+                        );
+                    } catch (error) {
+                        console.error(error);
+
+                        showMessage(
+                            "Impossible d’ouvrir le sélecteur de fichiers.",
+                            true
+                        );
+                    } finally {
+                        browseButton.disabled = false;
+                        browseButton.textContent =
+                            "Parcourir";
+                    }
+                }
+            );
+
+            pathRow.appendChild(
+                pathInput
+            );
+
+            pathRow.appendChild(
+                browseButton
+            );
+
+            pathField.appendChild(
+                pathLabel
+            );
+
+            pathField.appendChild(
+                pathRow
+            );
+
+            card.appendChild(
+                pathField
+            );
+
+
+            const processField =
+                createField(
+                    "Nom du processus Windows",
+                    Array.isArray(
+                        program.processNames
+                    )
+                        ? program
+                            .processNames
+                            .join(", ")
+                        : ""
+                );
+
+            const processInput =
+                processField.input;
+
+            processInput.addEventListener(
+                "input",
+                event => {
+                    program.processNames =
+                        event.target.value
+                            .split(",")
+                            .map(
+                                value =>
+                                    value.trim()
+                            )
+                            .filter(Boolean);
+                }
+            );
+
+            processInput.disabled =
+                Boolean(
+                    program.useShellApp
+                );
+
+            card.appendChild(
+                processField.field
+            );
+
+            return card;
+        }
+
+
+        function renderPrograms() {
+            programListElement.innerHTML =
+                "";
+
+            if (programs.length === 0) {
+                const emptyMessage =
+                    document.createElement(
+                        "div"
+                    );
+
+                emptyMessage.className =
+                    "empty-message";
+
+                emptyMessage.textContent =
+                    "Aucun logiciel dans la liste.";
+
+                programListElement.appendChild(
+                    emptyMessage
+                );
+
+                return;
+            }
+
+            programs.forEach(
+                (program, index) => {
+                    const card =
+                        createProgramCard(
+                            program,
+                            index
+                        );
+
+                    programListElement.appendChild(
+                        card
+                    );
+                }
+            );
+        }
+
+
+        async function loadPrograms() {
+            showMessage(
+                "Chargement..."
+            );
+
+            try {
+                const result =
+                    await window
+                        .skyDeckAPI
+                        .getPrograms();
+
+                if (!result.success) {
+                    throw new Error(
+                        "Impossible de charger les logiciels."
+                    );
+                }
+
+                programs =
+                    structuredClone(
+                        result.programs || []
+                    );
+
+                renderPrograms();
+
+                showMessage("");
+            } catch (error) {
+                console.error(error);
+
+                showMessage(
+                    "Erreur pendant le chargement des logiciels.",
+                    true
+                );
+            }
+        }
+
+
+        document
+            .getElementById(
+                "addProgram"
+            )
+            .addEventListener(
+                "click",
+                () => {
+                    const newProgram = {
+                        id:
+                            `nouveau-${Date.now()}`,
+                        name: "",
+                        path: "",
+                        processNames: []
+                    };
+
+                    programs.push(
+                        newProgram
+                    );
+
+                    renderPrograms();
+
+                    const nameInputs =
+                        document.querySelectorAll(
+                            ".program-setting input"
+                        );
+
+                    if (
+                        nameInputs.length > 0
+                    ) {
+                        const lastCard =
+                            programListElement
+                                .lastElementChild;
+
+                        const firstInput =
+                            lastCard?.querySelector(
+                                "input"
+                            );
+
+                        firstInput?.focus();
+                    }
+
+                    showMessage(
+                        "Nouvelle ligne ajoutée."
+                    );
+                }
+            );
+
+
+        saveButton.addEventListener(
+            "click",
+            async () => {
+                saveButton.disabled = true;
+                saveButton.textContent =
+                    "Enregistrement...";
+
+                try {
+                    for (
+                        const program
+                        of programs
+                    ) {
+                        program.name =
+                            String(
+                                program.name || ""
+                            ).trim();
+
+                        if (
+                            !program.id ||
+                            program.id.startsWith(
+                                "nouveau-"
+                            )
+                        ) {
+                            program.id =
+                                createUniqueId(
+                                    program.name
+                                );
+                        }
+
+                        if (
+                            !program.name
+                        ) {
+                            throw new Error(
+                                "Chaque logiciel doit avoir un nom."
+                            );
+                        }
+
+                        if (
+                            !program.useShellApp &&
+                            !String(
+                                program.path || ""
+                            ).trim()
+                        ) {
+                            throw new Error(
+                                `Le chemin de ${program.name} est vide.`
+                            );
+                        }
+                    }
+
+                    const result =
+                        await window
+                            .skyDeckAPI
+                            .savePrograms(
+                                programs
+                            );
+
+                    if (!result.success) {
+                        throw new Error(
+                            result.message ||
+                            "Échec de l’enregistrement."
+                        );
+                    }
+
+                    showMessage(
+                        "Configuration enregistrée."
+                    );
+                } catch (error) {
+                    console.error(error);
+
+                    showMessage(
+                        error.message,
+                        true
+                    );
+                } finally {
+                    saveButton.disabled = false;
+                    saveButton.textContent =
+                        "Enregistrer";
+                }
+            }
+        );
+
+
+        document
+            .getElementById(
+                "closeSettings"
+            )
+            .addEventListener(
+                "click",
+                () => {
+                    window.close();
+                }
+            );
+
+
+        loadPrograms();
+    </script>
+</body>
+</html>

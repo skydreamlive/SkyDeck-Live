@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test OBS</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: red;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 50px;
+        }
+
+        #clock {
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="clock">Chargement...</div>
+
+    <script>
+        const clock = document.getElementById("clock");
+
+        setInterval(() => {
+            clock.textContent =
+                "TEST OBS : " +
+                new Date().toLocaleTimeString("fr-FR");
+        }, 1000);
+    </script>
+</body>
+</html>

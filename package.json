@@ -1,0 +1,53 @@
+{
+  "name": "skydecklive",
+  "version": "1.0.0",
+  "description": "SkyDeck Live Desktop",
+  "main": "electron/main.js",
+  "author": "SkyDeck Airlines",
+  "license": "ISC",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win nsis",
+    "build:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.skydeckairlines.skydecklive",
+    "productName": "SkyDeck Live",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "assets/**/*",
+      "js/**/*",
+      "index.html",
+      "style.css",
+      "config.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SkyDeck Live",
+      "artifactName": "SkyDeck-Live-Setup-${version}.${ext}"
+    }
+  }
+}

@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>SkyDeck Live</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 28px;
+
+            background:
+                radial-gradient(
+                    circle at top,
+                    #12324a,
+                    #081018 68%
+                );
+
+            color: white;
+
+            font-family:
+                "Segoe UI",
+                Arial,
+                sans-serif;
+        }
+
+        .dashboard {
+            width: min(1180px, 100%);
+            min-height: calc(100vh - 56px);
+            margin: 0 auto;
+            padding: 34px;
+
+            display: flex;
+            flex-direction: column;
+
+            background:
+                rgba(8, 16, 24, 0.94);
+
+            border: 2px solid #00bfff;
+            border-radius: 24px;
+
+            box-shadow:
+                0 0 35px
+                rgba(0, 191, 255, 0.35);
+        }
+
+        .header {
+            margin-bottom: 26px;
+            text-align: center;
+        }
+
+        .airline {
+            color: #67dfff;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+
+        h1 {
+            margin: 10px 0 4px;
+            font-size: 36px;
+        }
+
+        .version {
+            color: #a9b9c4;
+        }
+
+        button {
+            border: 0;
+            border-radius: 12px;
+
+            background: #00bfff;
+            color: #041018;
+
+            font-size: 14px;
+            font-weight: 800;
+
+            cursor: pointer;
+        }
+
+        button:hover:not(:disabled) {
+            filter: brightness(1.12);
+        }
+
+        button:disabled {
+            cursor: default;
+            opacity: 0.55;
+        }
+
+        .settings-button {
+            margin-top: 14px;
+            padding: 10px 18px;
+        }
+
+        .program-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 14px 18px;
+        }
+
+        .status {
+            min-height: 78px;
+            padding: 14px 16px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+
+            background:
+                rgba(255, 255, 255, 0.05);
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.04);
+
+            border-radius: 12px;
+        }
+
+        .status.busy {
+            border-color:
+                rgba(255, 209, 102, 0.45);
+
+            box-shadow:
+                0 0 14px
+                rgba(255, 209, 102, 0.12);
+        }
+
+        .program-info {
+            min-width: 0;
+
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .program-name {
+            overflow: hidden;
+
+            font-size: 16px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .program-status {
+            color: #a9b9c4;
+        }
+
+        .program-status.running {
+            color: #49e58b;
+        }
+
+        .program-status.stopped {
+            color: #ff7b7b;
+        }
+
+        .program-status.starting {
+            color: #ffd166;
+        }
+
+        .program-status.error {
+            color: #ff7b7b;
+        }
+
+        .program-button {
+            flex: 0 0 auto;
+            min-width: 110px;
+            padding: 11px 18px;
+        }
+
+        .empty-message {
+            grid-column: 1 / -1;
+
+            padding: 28px;
+
+            color: #94a6b2;
+            text-align: center;
+
+            background:
+                rgba(255, 255, 255, 0.04);
+
+            border-radius: 12px;
+        }
+
+        .note {
+            margin-top: auto;
+            padding-top: 24px;
+
+            color: #94a6b2;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 18px;
+            }
+
+            .dashboard {
+                min-height: auto;
+                padding: 26px;
+            }
+
+            .program-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="dashboard">
+        <header class="header">
+            <div class="airline">
+                SKYDECK AIRLINES
+            </div>
+
+            <h1>✈ SkyDeck Live</h1>
+
+            <div class="version">
+                Version Desktop 2.0
+            </div>
+
+            <button
+                id="openSettings"
+                class="settings-button"
+                type="button"
+            >
+                ⚙ Paramètres
+            </button>
+        </header>
+
+        <section
+            id="programGrid"
+            class="program-grid"
+        >
+            <div class="status">
+                <div class="program-info">
+                    <span class="program-name">
+                        Application
+                    </span>
+
+                    <strong
+                        class="program-status running"
+                    >
+                        Prête
+                    </strong>
+                </div>
+            </div>
+
+            <div class="status">
+                <div class="program-info">
+                    <span class="program-name">
+                        SkyDeck Overlay
+                    </span>
+
+                    <strong
+                        id="overlayStatus"
+                        class="program-status stopped"
+                    >
+                        Fermé
+                    </strong>
+                </div>
+
+                <button
+                    id="launchOverlay"
+                    class="program-button"
+                    type="button"
+                >
+                    Ouvrir
+                </button>
+            </div>
+
+            <div class="status">
+                <div class="program-info">
+                    <span class="program-name">
+                        Restream
+                    </span>
+
+                    <strong
+                        id="restreamStatus"
+                        class="program-status"
+                    >
+                        Page web
+                    </strong>
+                </div>
+
+                <button
+                    id="openRestream"
+                    class="program-button"
+                    type="button"
+                >
+                    Ouvrir
+                </button>
+            </div>
+
+            <div
+                id="dynamicProgramsAnchor"
+                hidden
+            ></div>
+        </section>
+
+        <div class="note">
+            La liste des logiciels et leurs états sont
+            actualisés automatiquement toutes les trois secondes.
+        </div>
+    </main>
+
+    <script>
+        const programGrid =
+            document.getElementById(
+                "programGrid"
+            );
+
+        const dynamicProgramsAnchor =
+            document.getElementById(
+                "dynamicProgramsAnchor"
+            );
+
+        const programElements =
+            new Map();
+
+        const busyPrograms =
+            new Set();
+
+        let programs = [];
+
+        let programsSignature = "";
+
+        let refreshInProgress = false;
+
+
+        function createProgramsSignature(
+            programsList
+        ) {
+            return JSON.stringify(
+                programsList.map(program => ({
+                    id: program.id,
+                    name: program.name,
+                    path: program.path || "",
+                    appId: program.appId || "",
+                    processNames:
+                        program.processNames || []
+                }))
+            );
+        }
+
+
+        function removeDynamicProgramCards() {
+            for (
+                const elements
+                of programElements.values()
+            ) {
+                elements.card.remove();
+            }
+
+            programElements.clear();
+
+            const emptyMessage =
+                document.getElementById(
+                    "emptyProgramsMessage"
+                );
+
+            emptyMessage?.remove();
+        }
+
+
+        function createProgramCard(program) {
+            const card =
+                document.createElement("article");
+
+            card.className = "status";
+            card.dataset.programId =
+                program.id;
+
+
+            const information =
+                document.createElement("div");
+
+            information.className =
+                "program-info";
+
+
+            const name =
+                document.createElement("span");
+
+            name.className =
+                "program-name";
+
+            name.textContent =
+                program.name ||
+                "Logiciel sans nom";
+
+
+            const status =
+                document.createElement("strong");
+
+            status.className =
+                "program-status stopped";
+
+            status.textContent =
+                "Arrêté";
+
+
+            const button =
+                document.createElement("button");
+
+            button.type = "button";
+
+            button.className =
+                "program-button";
+
+            button.textContent =
+                "Lancer";
+
+
+            information.appendChild(name);
+            information.appendChild(status);
+
+            card.appendChild(information);
+            card.appendChild(button);
+
+
+            button.addEventListener(
+                "click",
+                () => {
+                    handleProgramAction(
+                        program.id
+                    );
+                }
+            );
+
+
+            programElements.set(
+                program.id,
+                {
+                    card,
+                    name,
+                    status,
+                    button
+                }
+            );
+
+            return card;
+        }
+
+
+        function renderPrograms() {
+            removeDynamicProgramCards();
+
+            if (programs.length === 0) {
+                const emptyMessage =
+                    document.createElement("div");
+
+                emptyMessage.id =
+                    "emptyProgramsMessage";
+
+                emptyMessage.className =
+                    "empty-message";
+
+                emptyMessage.textContent =
+                    "Aucun logiciel configuré. Utilise Paramètres pour en ajouter.";
+
+                programGrid.insertBefore(
+                    emptyMessage,
+                    dynamicProgramsAnchor
+                );
+
+                return;
+            }
+
+            for (const program of programs) {
+                const card =
+                    createProgramCard(
+                        program
+                    );
+
+                programGrid.insertBefore(
+                    card,
+                    dynamicProgramsAnchor
+                );
+            }
+        }
+
+
+        function setStatusAppearance(
+            statusElement,
+            state
+        ) {
+            statusElement.classList.remove(
+                "running",
+                "stopped",
+                "starting",
+                "error"
+            );
+
+            statusElement.classList.add(
+                state
+            );
+        }
+
+
+        function displayProgramStatus(
+            programId,
+            isRunning
+        ) {
+            const elements =
+                programElements.get(
+                    programId
+                );
+
+            if (
+                !elements ||
+                busyPrograms.has(programId)
+            ) {
+                return;
+            }
+
+            elements.status.textContent =
+                isRunning
+                    ? "Ouvert"
+                    : "Arrêté";
+
+            setStatusAppearance(
+                elements.status,
+                isRunning
+                    ? "running"
+                    : "stopped"
+            );
+
+            elements.button.textContent =
+                isRunning
+                    ? "Fermer"
+                    : "Lancer";
+
+            elements.button.disabled =
+                false;
+
+            elements.card.classList.remove(
+                "busy"
+            );
+        }
+
+
+        function displayBusyState(
+            programId,
+            action
+        ) {
+            const elements =
+                programElements.get(
+                    programId
+                );
+
+            if (!elements) {
+                return;
+            }
+
+            busyPrograms.add(
+                programId
+            );
+
+            elements.card.classList.add(
+                "busy"
+            );
+
+            elements.status.textContent =
+                action === "close"
+                    ? "Fermeture"
+                    : "Démarrage";
+
+            setStatusAppearance(
+                elements.status,
+                "starting"
+            );
+
+            elements.button.textContent =
+                action === "close"
+                    ? "Fermeture..."
+                    : "Lancement...";
+
+            elements.button.disabled =
+                true;
+        }
+
+
+        function displayProgramError(
+            programId,
+            previousAction
+        ) {
+            const elements =
+                programElements.get(
+                    programId
+                );
+
+            if (!elements) {
+                return;
+            }
+
+            busyPrograms.delete(
+                programId
+            );
+
+            elements.card.classList.remove(
+                "busy"
+            );
+
+            elements.status.textContent =
+                "Erreur";
+
+            setStatusAppearance(
+                elements.status,
+                "error"
+            );
+
+            elements.button.textContent =
+                previousAction === "close"
+                    ? "Fermer"
+                    : "Réessayer";
+
+            elements.button.disabled =
+                false;
+        }
+
+
+        async function handleProgramAction(
+            programId
+        ) {
+            const elements =
+                programElements.get(
+                    programId
+                );
+
+            if (
+                !elements ||
+                busyPrograms.has(programId)
+            ) {
+                return;
+            }
+
+            const shouldClose =
+                elements.button.textContent ===
+                "Fermer";
+
+            const action =
+                shouldClose
+                    ? "close"
+                    : "launch";
+
+            displayBusyState(
+                programId,
+                action
+            );
+
+            try {
+                const result =
+                    shouldClose
+                        ? await window
+                            .skyDeckAPI
+                            .closeProgram(
+                                programId
+                            )
+                        : await window
+                            .skyDeckAPI
+                            .launchProgram(
+                                programId
+                            );
+
+                if (!result.success) {
+                    displayProgramError(
+                        programId,
+                        action
+                    );
+
+                    return;
+                }
+
+                window.setTimeout(
+                    async () => {
+                        busyPrograms.delete(
+                            programId
+                        );
+
+                        await refreshAll();
+                    },
+                    shouldClose
+                        ? 1200
+                        : 1600
+                );
+            } catch (error) {
+                console.error(
+                    `Erreur action ${programId} :`,
+                    error
+                );
+
+                displayProgramError(
+                    programId,
+                    action
+                );
+            }
+        }
+
+
+        async function loadPrograms(
+            forceRender = false
+        ) {
+            try {
+                const result =
+                    await window
+                        .skyDeckAPI
+                        .getPrograms();
+
+                if (!result.success) {
+                    throw new Error(
+                        "Impossible de charger la liste des logiciels."
+                    );
+                }
+
+                const nextPrograms =
+                    Array.isArray(
+                        result.programs
+                    )
+                        ? result.programs
+                        : [];
+
+                const nextSignature =
+                    createProgramsSignature(
+                        nextPrograms
+                    );
+
+                if (
+                    forceRender ||
+                    nextSignature !==
+                        programsSignature
+                ) {
+                    programs =
+                        structuredClone(
+                            nextPrograms
+                        );
+
+                    programsSignature =
+                        nextSignature;
+
+                    renderPrograms();
+                }
+
+                return true;
+            } catch (error) {
+                console.error(
+                    "Erreur chargement programmes :",
+                    error
+                );
+
+                return false;
+            }
+        }
+
+
+        async function refreshStatuses() {
+            try {
+                const result =
+                    await window
+                        .skyDeckAPI
+                        .getProgramStatuses();
+
+                if (!result.success) {
+                    return;
+                }
+
+                for (const program of programs) {
+                    displayProgramStatus(
+                        program.id,
+                        Boolean(
+                            result.statuses[
+                                program.id
+                            ]
+                        )
+                    );
+                }
+
+                displayOverlayStatus(
+                    Boolean(
+                        result.statuses.overlay
+                    )
+                );
+            } catch (error) {
+                console.error(
+                    "Erreur actualisation états :",
+                    error
+                );
+            }
+        }
+
+
+        function displayOverlayStatus(
+            isRunning
+        ) {
+            const status =
+                document.getElementById(
+                    "overlayStatus"
+                );
+
+            const button =
+                document.getElementById(
+                    "launchOverlay"
+                );
+
+            status.textContent =
+                isRunning
+                    ? "Ouvert"
+                    : "Fermé";
+
+            setStatusAppearance(
+                status,
+                isRunning
+                    ? "running"
+                    : "stopped"
+            );
+
+            button.textContent =
+                isRunning
+                    ? "Afficher"
+                    : "Ouvrir";
+
+            button.disabled =
+                false;
+        }
+
+
+        async function refreshAll() {
+            if (refreshInProgress) {
+                return;
+            }
+
+            refreshInProgress = true;
+
+            try {
+                await loadPrograms();
+                await refreshStatuses();
+            } finally {
+                refreshInProgress = false;
+            }
+        }
+
+
+        document
+            .getElementById(
+                "launchOverlay"
+            )
+            .addEventListener(
+                "click",
+                async event => {
+                    const button =
+                        event.currentTarget;
+
+                    button.disabled = true;
+
+                    try {
+                        await window
+                            .skyDeckAPI
+                            .launchOverlay();
+
+                        await refreshStatuses();
+                    } catch (error) {
+                        console.error(
+                            "Erreur Overlay :",
+                            error
+                        );
+
+                        button.disabled = false;
+                    }
+                }
+            );
+
+
+        document
+            .getElementById(
+                "openRestream"
+            )
+            .addEventListener(
+                "click",
+                async event => {
+                    const button =
+                        event.currentTarget;
+
+                    const status =
+                        document.getElementById(
+                            "restreamStatus"
+                        );
+
+                    button.disabled = true;
+                    button.textContent =
+                        "Ouverture...";
+
+                    try {
+                        const result =
+                            await window
+                                .skyDeckAPI
+                                .openRestream();
+
+                        status.textContent =
+                            result.success
+                                ? "Ouvert"
+                                : "Erreur";
+
+                        setStatusAppearance(
+                            status,
+                            result.success
+                                ? "running"
+                                : "error"
+                        );
+
+                        button.textContent =
+                            result.success
+                                ? "Ouvrir"
+                                : "Réessayer";
+                    } catch (error) {
+                        console.error(
+                            "Erreur Restream :",
+                            error
+                        );
+
+                        status.textContent =
+                            "Erreur";
+
+                        setStatusAppearance(
+                            status,
+                            "error"
+                        );
+
+                        button.textContent =
+                            "Réessayer";
+                    } finally {
+                        button.disabled = false;
+                    }
+                }
+            );
+
+
+        document
+            .getElementById(
+                "openSettings"
+            )
+            .addEventListener(
+                "click",
+                async () => {
+                    try {
+                        await window
+                            .skyDeckAPI
+                            .openSettings();
+                    } catch (error) {
+                        console.error(
+                            "Erreur ouverture Paramètres :",
+                            error
+                        );
+                    }
+                }
+            );
+
+
+        window.addEventListener(
+            "focus",
+            () => {
+                refreshAll();
+            }
+        );
+
+
+        async function initializeDashboard() {
+            const loaded =
+                await loadPrograms(true);
+
+            if (loaded) {
+                await refreshStatuses();
+            }
+
+            window.setInterval(
+                refreshAll,
+                3000
+            );
+        }
+
+
+        initializeDashboard();
+    </script>
+</body>
+</html>

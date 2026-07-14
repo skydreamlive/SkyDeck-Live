@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SkyDeck Live Test</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="testPanel">
+    <button id="testFollow">Test Follow</button>
+    <button id="testGift">Test Gift</button>
+    <button id="testShare">Test Share</button>
+</div>
+
+    <div id="alertBox">
+
+        <div class="icon" id="alertIcon">
+            ✈️
+        </div>
+
+        <div class="content">
+
+            <div class="title" id="alertTitle">
+                Nouveau passager
+            </div>
+
+            <div class="username" id="alertUsername">
+                SkyPilot75
+            </div>
+
+            <div class="message" id="alertMessage">
+                Bienvenue à bord
+            </div>
+
+        </div>
+
+    </div>
+    
+    <div id="goalWidget">
+     
+        <div id="goalBoard">
+
+    <div class="boardCompany">
+        SKYDECK AIRLINES
+    </div>
+
+    <div id="boardFlight" class="boardFlight">
+        VOL SD3000
+    </div>
+
+    <div class="boardMessage">
+        MERCI POUR VOS FOLLOWS
+    </div>
+
+    <div class="boardContinue">
+        L'AVENTURE CONTINUE !
+    </div>
+
+</div>  
+<div id="goalThanks" aria-hidden="true">
+    <div class="thanksCompany">SKYDECK AIRLINES</div>
+    <div id="thanksFlight" class="thanksFlight">VOL SD3000</div>
+
+    <div class="thanksMessage">
+        MERCI POUR VOS FOLLOWS
+    </div>
+
+    <div class="thanksContinue">
+        L'AVENTURE CONTINUE !
+    </div>
+</div>
+    <div class="goalHeader">
+
+        <div class="goalTitle">
+            ✈️ Embarquement
+        </div>
+
+        <div class="goalNumbers">
+            <span id="currentFollowers">2258</span>
+            /
+            <span id="goalFollowers">2500</span>
+        </div>
+
+    </div>
+
+    <div id="goalRemaining">
+        Plus que 242 passagers avant l’objectif
+    </div>
+
+    <div class="goalTrack">
+
+        <div id="goalProgress"></div>
+
+        <div id="goalPlane">
+    <img src="assets/images/boeing737.png" id="planeImage">
+
+        </div>
+
+        <div id="goalPercent">
+            90 %
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="config.js"></script>
+<script src="js/board.js"></script>
+<script src="js/plane.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/goals.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

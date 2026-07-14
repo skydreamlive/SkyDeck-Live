@@ -1,0 +1,551 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    background:transparent;
+    overflow:hidden;
+
+    font-family:Segoe UI,Arial,sans-serif;
+
+}
+
+#alertBox {
+    position: absolute;
+
+    top: 200px;
+    right: 100px;
+
+    width: 420px;
+    height: 100px;
+
+    display: flex;
+    align-items: center;
+
+    background: rgba(20,20,25,.90);
+    border: 2px solid #00BFFF;
+    border-radius: 18px;
+    box-shadow: 0 0 25px rgba(0,191,255,.5);
+
+    transition: right .8s ease;
+    padding: 15px;
+}
+
+
+.icon{
+
+    font-size:42px;
+
+    margin-right:15px;
+
+}
+
+.title{
+
+    color:#00BFFF;
+
+    font-size:15px;
+
+    font-weight:bold;
+
+}
+
+.username{
+
+    color:white;
+
+    font-size:24px;
+
+    font-weight:700;
+
+    margin-top:3px;
+
+}
+
+.message{
+
+    color:#d0d0d0;
+
+    margin-top:4px;
+
+}#testPanel{
+
+    position:absolute;
+
+    left:20px;
+    bottom:20px;
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+#testPanel button{
+
+    background:#111;
+
+    color:white;
+
+    border:2px solid #00BFFF;
+
+    border-radius:8px;
+
+    padding:10px 15px;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+#testPanel button:hover{
+
+    background:#00BFFF;
+
+    color:black;
+
+}#testPanel{
+
+    position:absolute;
+
+    left:20px;
+    bottom:20px;
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+#testPanel button{
+
+    background:#111;
+
+    color:white;
+
+    border:2px solid #00BFFF;
+
+    border-radius:8px;
+
+    padding:10px 15px;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+#testPanel button:hover{
+
+    background:#00BFFF;
+
+    color:black;
+
+}/* ===========================
+   OBJECTIF EMBARQUEMENT
+=========================== */
+
+#goalWidget{
+    position:absolute;
+    overflow:visible;
+    isolation:isolate;
+
+    left:200px;
+    bottom:40px;
+
+    width:520px;
+    height:170px;
+
+    background-image:url("assets/images/airport_background.png");
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    background-color:#0b1016;
+    
+    border:2px solid #00bfff;
+    border-radius:20px;
+
+    padding:18px 20px;
+
+    box-shadow:0 0 18px rgba(0,191,255,.45);
+}
+
+.goalHeader{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:20px;
+}
+
+.goalTitle{
+    color:#00bfff;
+    font-size:22px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+.goalNumbers{
+    color:white;
+    font-size:24px;
+    font-weight:800;
+    text-align:right;
+    text-shadow:0 0 8px rgba(0,191,255,.35);
+}
+
+#goalRemaining{
+
+    margin-top:10px;
+
+    margin-bottom:14px;
+
+    color:#d0d0d0;
+
+    font-size:13px;
+
+}
+
+.goalTrack{
+
+    position:relative;
+
+    width:100%;
+
+    height:18px;
+
+    margin-top:61px;
+
+    background:transparent;
+
+    border-radius:20px;
+
+    border:none;
+
+    overflow:visible;
+
+}
+
+#goalTrack::before{
+
+    content:"";
+
+    position:absolute;
+
+    top:50%;
+
+    left:0;
+
+    width:100%;
+
+    height:4px;
+
+    transform:translateY(-50%);
+
+    background:repeating-linear-gradient(
+        to right,
+        white 0px,
+        white 18px,
+        transparent 18px,
+        transparent 38px
+    );
+
+    opacity:.35;
+
+    pointer-events:none;
+
+}
+
+#goalProgress{
+
+    width:90%;
+
+    height:100%;
+
+    border-radius:20px;
+
+    background:linear-gradient(
+        90deg,
+        rgba(0,191,255,.95),
+        rgba(80,220,255,.55)
+    );    
+        height:6px;
+
+        top:50%;
+
+        transform:translateY(-50%);
+
+        border-radius:20px;
+
+        box-shadow:
+        0 0 8px rgba(0,191,255,.5);
+    
+    
+
+        transition:width .5s ease;
+
+}
+
+#goalPlane{
+    position:absolute;
+
+    top:62%;
+    left:54%;
+
+    transform:translate(-50%,-50%);
+
+    z-index:10;
+
+    transition:left .5s ease;
+}
+    
+    
+
+    #planeImage{
+    width:135px;
+    height:auto;
+
+    display:block;
+
+    transform:translateY(-18px);
+
+    object-fit:contain;
+
+    filter:
+    drop-shadow(0 4px 8px rgba(0,0,0,.55))
+    drop-shadow(0 0 4px rgba(255,255,255,.18));
+}
+#goalPercent{
+
+    position:absolute;
+
+    top:50%;
+
+    right:10px;
+
+    transform:translateY(-50%);
+
+    color:white;
+
+    font-size:13px;
+
+    font-weight:bold;
+
+    text-shadow:0 0 6px rgba(0,0,0,.6);
+
+}#goalWidget::before{
+    content:"";
+
+    position:absolute;
+    inset:0;
+
+    border-radius:18px;
+
+    background:rgba(4,10,18,.38);
+
+    z-index:0;
+    pointer-events:none;
+}
+
+.goalHeader,
+#goalRemaining,
+.goalTrack{
+    position:relative;
+    z-index:2;
+}#goalThanks{
+    position:absolute;
+    inset:0;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+
+    padding:12px 16px;
+
+    border-radius:18px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(5,10,16,.98),
+            rgba(10,20,29,.98)
+        );
+
+    border:1px solid rgba(0,191,255,.75);
+
+    box-shadow:
+        inset 0 0 18px rgba(0,191,255,.10),
+        0 0 18px rgba(0,191,255,.28);
+
+    color:white;
+
+    opacity:0;
+    visibility:hidden;
+
+    transform:scale(.97);
+
+    z-index:50;
+    pointer-events:none;
+    overflow:hidden;
+}
+
+#goalThanks.show{
+    visibility:visible;
+    animation:showThanksBoard 4s ease forwards;
+}
+
+.thanksCompany{
+    color:#67dfff;
+
+    font-family:Consolas,monospace;
+    font-size:11px;
+    font-weight:700;
+
+    letter-spacing:3px;
+}
+
+.thanksFlight{
+    margin-top:5px;
+
+    color:white;
+
+    font-family:Consolas,monospace;
+    font-size:22px;
+    font-weight:900;
+
+    letter-spacing:2px;
+}
+
+.thanksMessage{
+    width:100%;
+
+    margin-top:9px;
+    padding:6px 4px;
+
+    border-top:1px solid rgba(255,255,255,.18);
+    border-bottom:1px solid rgba(255,255,255,.18);
+
+    color:white;
+
+    font-family:Consolas,monospace;
+    font-size:15px;
+    font-weight:800;
+
+    text-align:center;
+}
+
+.thanksContinue{
+    margin-top:8px;
+
+    color:#00bfff;
+
+    font-family:Consolas,monospace;
+    font-size:13px;
+    font-weight:700;
+
+    letter-spacing:1px;
+    text-align:center;
+}
+
+@keyframes showThanksBoard{
+    0%{
+        opacity:0;
+        transform:scale(.97) translateY(8px);
+    }
+
+    12%{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+
+    85%{
+        opacity:1;
+        transform:scale(1) translateY(0);
+    }
+
+    100%{
+        opacity:0;
+        transform:scale(.98) translateY(-8px);
+    }
+}/* ===========================
+   TABLEAU DE REMERCIEMENT
+=========================== */
+
+#goalBoard{
+
+    position:absolute;
+    inset:0;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
+    border-radius:18px;
+
+    background:rgba(5,10,18,.96);
+
+    opacity:0;
+    visibility:hidden;
+
+    z-index:100;
+
+    transition:opacity .4s ease;
+
+}
+
+#goalBoard.show{
+
+    opacity:1;
+    visibility:visible;
+
+}
+
+.boardCompany{
+
+    color:#67dfff;
+
+    font-size:12px;
+    font-weight:bold;
+
+    letter-spacing:3px;
+
+}
+
+.boardFlight{
+
+    margin-top:6px;
+
+    color:white;
+
+    font-size:24px;
+    font-weight:900;
+
+}
+
+.boardMessage{
+
+    margin-top:12px;
+
+    color:white;
+
+    font-size:18px;
+    font-weight:bold;
+
+}
+
+.boardContinue{
+
+    margin-top:8px;
+
+    color:#00bfff;
+
+    font-size:14px;
+    font-weight:bold;
+
+}
