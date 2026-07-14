@@ -1,3 +1,4 @@
+const fs = require("node:fs");
 const path = require("node:path");
 
 const {
@@ -19,6 +20,7 @@ const {
 
 const {
     getProgramsList,
+    getProgram,
     replacePrograms
 } = require("./programs");
 
@@ -53,33 +55,61 @@ let overlayWindow = null;
 let settingsWindow = null;
 
 
+/* ===========================
+   CACHE DES ICÔNES
+=========================== */
+
+const programIconCache = new Map();
+
+const customIconsDirectory = path.join(
+    __dirname,
+    "assets",
+    "program-icons"
+);
+
+
+/* ===========================
+   FENÊTRE PRINCIPALE
+=========================== */
+
 function createDashboardWindow() {
     dashboardWindow = new BrowserWindow({
         width: 1280,
         height: 720,
-
         minWidth: 1000,
         minHeight: 650,
-
         title: "SkyDeck Live",
         backgroundColor: "#081018",
 
         webPreferences: {
-            preload: path.join(__dirname, "preload.js"),
+            preload: path.join(
+                __dirname,
+                "preload.js"
+            ),
             contextIsolation: true,
             nodeIntegration: false
         }
     });
 
     dashboardWindow.loadFile(
-        path.join(__dirname, "dashboard.html")
+        path.join(
+            __dirname,
+            "dashboard.html"
+        )
     );
 
-    dashboardWindow.on("closed", () => {
-        dashboardWindow = null;
-    });
+    dashboardWindow.on(
+        "closed",
+        () => {
+            dashboardWindow = null;
+        }
+    );
 }
 
+
+/* ===========================
+   OVERLAY
+=========================== */
 
 function createOverlayWindow() {
     if (
@@ -99,10 +129,8 @@ function createOverlayWindow() {
     overlayWindow = new BrowserWindow({
         width: 800,
         height: 600,
-
         title: "SkyDeck Live Overlay",
         backgroundColor: "#081018",
-
         show: true,
 
         webPreferences: {
@@ -112,12 +140,19 @@ function createOverlayWindow() {
     });
 
     overlayWindow.loadFile(
-        path.join(__dirname, "..", "index.html")
+        path.join(
+            __dirname,
+            "..",
+            "index.html"
+        )
     );
 
-    overlayWindow.on("closed", () => {
-        overlayWindow = null;
-    });
+    overlayWindow.on(
+        "closed",
+        () => {
+            overlayWindow = null;
+        }
+    );
 
     return {
         success: true,
@@ -125,17 +160,18 @@ function createOverlayWindow() {
         message: "Overlay ouvert."
     };
 }
-function createSettingsWindow() {
-    
-    console.log(
-        "Création de la fenêtre Paramètres"
-    );
 
-    // reste de la fonction...
+
+/* ===========================
+   PARAMÈTRES
+=========================== */
+
+function createSettingsWindow() {
     if (
         settingsWindow &&
         !settingsWindow.isDestroyed()
     ) {
+        settingsWindow.show();
         settingsWindow.focus();
 
         return {
@@ -146,13 +182,9 @@ function createSettingsWindow() {
     settingsWindow = new BrowserWindow({
         width: 950,
         height: 720,
-
         resizable: false,
-
         title: "SkyDeck Live - Paramètres",
-
         backgroundColor: "#081018",
-
         parent: dashboardWindow,
 
         webPreferences: {
@@ -186,6 +218,241 @@ function createSettingsWindow() {
 
 
 /* ===========================
+   ICÔNES PERSONNALISÉES
+=========================== */
+
+function getCustomIconPath(programId) {
+    const supportedExtensions = [
+        "png",
+        "jpg",
+        "jpeg",
+        "webp"
+    ];
+
+    for (
+        const extension
+        of supportedExtensions
+    ) {
+        const candidatePath = path.join(
+            customIconsDirectory,
+            `${programId}.${extension}`
+        );
+
+        if (fs.existsSync(candidatePath)) {
+            return candidatePath;
+        }
+    }
+
+    return null;
+}
+
+
+function fileToDataUrl(filePath) {
+    const extension =
+        path.extname(filePath)
+            .toLowerCase()
+            .replace(".", "");
+
+    const mimeTypes = {
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        webp: "image/webp"
+    };
+
+    const mimeType =
+        mimeTypes[extension] ||
+        "application/octet-stream";
+
+    const data =
+        fs.readFileSync(filePath);
+
+    return (
+        `data:${mimeType};base64,` +
+        data.toString("base64")
+    );
+}
+
+
+/* ===========================
+   ICÔNES DES PROGRAMMES
+=========================== */
+
+async function getProgramIcon(programId) {
+    const program = getProgram(programId);
+
+    if (!program) {
+        return {
+            success: false,
+            iconDataUrl: null,
+            source: null,
+            message: "Programme inconnu."
+        };
+    }
+
+    const cacheKey =
+        `${program.id}:${program.path || ""}`;
+
+    if (programIconCache.has(cacheKey)) {
+        return {
+            success: true,
+            iconDataUrl:
+                programIconCache.get(cacheKey),
+            source: "cache"
+        };
+    }
+
+    try {
+        const customIconPath =
+            getCustomIconPath(program.id);
+
+        if (customIconPath) {
+            const iconDataUrl =
+                fileToDataUrl(
+                    customIconPath
+                );
+
+            programIconCache.set(
+                cacheKey,
+                iconDataUrl
+            );
+
+            return {
+                success: true,
+                iconDataUrl,
+                source: "custom"
+            };
+        }
+
+        if (
+            !program.path ||
+            program.useShellApp
+        ) {
+            return {
+                success: true,
+                iconDataUrl: null,
+                source: "fallback"
+            };
+        }
+
+        const icon =
+            await app.getFileIcon(
+                program.path,
+                {
+                    size: "large"
+                }
+            );
+
+        if (icon.isEmpty()) {
+            return {
+                success: true,
+                iconDataUrl: null,
+                source: "fallback"
+            };
+        }
+
+        const iconDataUrl =
+            icon.toDataURL();
+
+        programIconCache.set(
+            cacheKey,
+            iconDataUrl
+        );
+
+        return {
+            success: true,
+            iconDataUrl,
+            source: "windows"
+        };
+    } catch (error) {
+        console.warn(
+            `Icône indisponible pour ${program.name} :`,
+            error.message
+        );
+
+        return {
+            success: true,
+            iconDataUrl: null,
+            source: "fallback"
+        };
+    }
+}
+
+
+/* ===========================
+   VALIDATION DE CONFIGURATION
+=========================== */
+
+function cleanPrograms(programs) {
+    if (!Array.isArray(programs)) {
+        throw new Error(
+            "La configuration doit être une liste."
+        );
+    }
+
+    const cleanedPrograms =
+        programs.map(program => ({
+            ...program,
+
+            id: String(
+                program.id || ""
+            ).trim(),
+
+            name: String(
+                program.name || ""
+            ).trim(),
+
+            path: program.path
+                ? String(program.path).trim()
+                : "",
+
+            processNames:
+                Array.isArray(
+                    program.processNames
+                )
+                    ? program.processNames
+                        .map(name =>
+                            String(name).trim()
+                        )
+                        .filter(Boolean)
+                    : []
+        }));
+
+    const invalidProgram =
+        cleanedPrograms.find(
+            program =>
+                !program.id ||
+                !program.name ||
+                (
+                    !program.useShellApp &&
+                    !program.path
+                )
+        );
+
+    if (invalidProgram) {
+        throw new Error(
+            "Un logiciel contient des informations incomplètes."
+        );
+    }
+
+    const ids =
+        cleanedPrograms.map(
+            program => program.id
+        );
+
+    if (
+        new Set(ids).size !== ids.length
+    ) {
+        throw new Error(
+            "Deux logiciels utilisent le même identifiant."
+        );
+    }
+
+    return cleanedPrograms;
+}
+
+
+/* ===========================
    DÉMARRAGE ELECTRON
 =========================== */
 
@@ -196,27 +463,29 @@ app.whenReady().then(() => {
             return createOverlayWindow();
         }
     );
-ipcMain.handle(
-    "open-settings",
-    async () => {
-        console.log(
-            "Demande d’ouverture des Paramètres reçue"
-        );
 
-        return createSettingsWindow();
-    }
-);
+    ipcMain.handle(
+        "open-settings",
+        async () => {
+            return createSettingsWindow();
+        }
+    );
+
     ipcMain.handle(
         "launch-program",
         async (_event, programId) => {
-            return await launchProgram(programId);
+            return await launchProgram(
+                programId
+            );
         }
     );
 
     ipcMain.handle(
         "close-program",
         async (_event, programId) => {
-            return await closeProgram(programId);
+            return await closeProgram(
+                programId
+            );
         }
     );
 
@@ -225,6 +494,15 @@ ipcMain.handle(
         async () => {
             return await getProgramStatuses(
                 overlayWindow
+            );
+        }
+    );
+
+    ipcMain.handle(
+        "get-program-icon",
+        async (_event, programId) => {
+            return await getProgramIcon(
+                programId
             );
         }
     );
@@ -257,172 +535,151 @@ ipcMain.handle(
     );
 
     ipcMain.handle(
-    "get-programs",
-    async () => {
-        return {
-            success: true,
-            programs: getProgramsList()
-        };
-    }
-);
-
-ipcMain.handle(
-    "browse-program",
-    async (_event, currentPath = "") => {
-        const result =
-            await dialog.showOpenDialog(
-                settingsWindow || dashboardWindow,
-                {
-                    title: "Choisir un programme",
-                    defaultPath:
-                        currentPath || undefined,
-                    properties: [
-                        "openFile"
-                    ],
-                    filters: [
-                        {
-                            name: "Programmes Windows",
-                            extensions: [
-                                "exe",
-                                "bat",
-                                "cmd"
-                            ]
-                        },
-                        {
-                            name: "Tous les fichiers",
-                            extensions: ["*"]
-                        }
-                    ]
-                }
-            );
-
-        if (
-            result.canceled ||
-            result.filePaths.length === 0
-        ) {
+        "get-programs",
+        async () => {
             return {
-                success: false,
-                canceled: true
+                success: true,
+                programs: getProgramsList()
             };
         }
+    );
 
-        const selectedPath =
-            result.filePaths[0];
+    ipcMain.handle(
+        "browse-program",
+        async (
+            _event,
+            currentPath = ""
+        ) => {
+            const result =
+                await dialog.showOpenDialog(
+                    settingsWindow ||
+                    dashboardWindow,
+                    {
+                        title:
+                            "Choisir un programme",
 
-        return {
-            success: true,
-            path: selectedPath,
-            processName: path.basename(
-                selectedPath
-            ),
-            suggestedName: path.basename(
-                selectedPath,
-                path.extname(selectedPath)
-            )
-        };
-    }
-);
+                        defaultPath:
+                            currentPath ||
+                            undefined,
 
-ipcMain.handle(
-    "save-programs",
-    async (_event, programs) => {
-        try {
-            if (!Array.isArray(programs)) {
-                throw new Error(
-                    "La configuration doit être une liste."
-                );
-            }
+                        properties: [
+                            "openFile"
+                        ],
 
-            const cleanedPrograms =
-                programs.map(program => ({
-                    ...program,
-                    id: String(program.id || "")
-                        .trim(),
-                    name: String(program.name || "")
-                        .trim(),
-                    path: program.path
-                        ? String(program.path).trim()
-                        : "",
-                    processNames:
-                        Array.isArray(
-                            program.processNames
-                        )
-                            ? program.processNames
-                                .map(name =>
-                                    String(name).trim()
-                                )
-                                .filter(Boolean)
-                            : []
-                }));
+                        filters: [
+                            {
+                                name:
+                                    "Programmes Windows",
 
-            const invalidProgram =
-                cleanedPrograms.find(
-                    program =>
-                        !program.id ||
-                        !program.name ||
-                        (
-                            !program.useShellApp &&
-                            !program.path
-                        )
-                );
+                                extensions: [
+                                    "exe",
+                                    "bat",
+                                    "cmd"
+                                ]
+                            },
+                            {
+                                name:
+                                    "Tous les fichiers",
 
-            if (invalidProgram) {
-                throw new Error(
-                    "Un logiciel contient des informations incomplètes."
-                );
-            }
-
-            const ids =
-                cleanedPrograms.map(
-                    program => program.id
+                                extensions: ["*"]
+                            }
+                        ]
+                    }
                 );
 
             if (
-                new Set(ids).size !== ids.length
+                result.canceled ||
+                result.filePaths.length === 0
             ) {
-                throw new Error(
-                    "Deux logiciels utilisent le même identifiant."
-                );
+                return {
+                    success: false,
+                    canceled: true
+                };
             }
 
-            savePrograms(cleanedPrograms);
-            replacePrograms(cleanedPrograms);
+            const selectedPath =
+                result.filePaths[0];
 
             return {
                 success: true,
-                message:
-                    "Configuration enregistrée."
-            };
-        } catch (error) {
-            console.error(
-                "Erreur enregistrement programmes :",
-                error
-            );
+                path: selectedPath,
 
-            return {
-                success: false,
-                message: error.message
+                processName:
+                    path.basename(
+                        selectedPath
+                    ),
+
+                suggestedName:
+                    path.basename(
+                        selectedPath,
+                        path.extname(
+                            selectedPath
+                        )
+                    )
             };
         }
-    }
-);
+    );
+
+    ipcMain.handle(
+        "save-programs",
+        async (_event, programs) => {
+            try {
+                const cleanedPrograms =
+                    cleanPrograms(programs);
+
+                savePrograms(
+                    cleanedPrograms
+                );
+
+                replacePrograms(
+                    cleanedPrograms
+                );
+
+                programIconCache.clear();
+
+                return {
+                    success: true,
+                    message:
+                        "Configuration enregistrée."
+                };
+            } catch (error) {
+                console.error(
+                    "Erreur enregistrement programmes :",
+                    error
+                );
+
+                return {
+                    success: false,
+                    message: error.message
+                };
+            }
+        }
+    );
 
     createDashboardWindow();
 
-    app.on("activate", () => {
-        if (
-            BrowserWindow
-                .getAllWindows()
-                .length === 0
-        ) {
-            createDashboardWindow();
+    app.on(
+        "activate",
+        () => {
+            if (
+                BrowserWindow
+                    .getAllWindows()
+                    .length === 0
+            ) {
+                createDashboardWindow();
+            }
         }
-    });
+    );
 });
 
 
-app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-        app.quit();
+app.on(
+    "window-all-closed",
+    () => {
+        if (
+            process.platform !== "darwin"
+        ) {
+            app.quit();
+        }
     }
-});
+);

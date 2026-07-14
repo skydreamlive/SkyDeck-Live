@@ -33,6 +33,12 @@ contextBridge.exposeInMainWorld(
                 "get-program-statuses"
             ),
 
+        getProgramIcon: programId =>
+            ipcRenderer.invoke(
+                "get-program-icon",
+                programId
+            ),
+
         openRestream: () =>
             ipcRenderer.invoke(
                 "open-restream"

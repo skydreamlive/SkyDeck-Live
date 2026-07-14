@@ -15,7 +15,6 @@ body {
         );
 
     color: white;
-
     font-family:
         "Segoe UI",
         Arial,
@@ -104,9 +103,8 @@ button:disabled {
     padding: 14px 16px;
 
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
 
     background:
         rgba(255, 255, 255, 0.05);
@@ -127,8 +125,42 @@ button:disabled {
         rgba(255, 209, 102, 0.12);
 }
 
+.program-icon {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+
+    display: grid;
+    place-items: center;
+
+    overflow: hidden;
+
+    background:
+        rgba(255, 255, 255, 0.07);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    border-radius: 11px;
+}
+
+.program-icon-image {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+}
+
+.program-icon-fallback {
+    color: #67dfff;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
 .program-info {
     min-width: 0;
+    flex: 1 1 auto;
 
     display: flex;
     flex-direction: column;
@@ -151,16 +183,13 @@ button:disabled {
     color: #49e58b;
 }
 
-.program-status.stopped {
+.program-status.stopped,
+.program-status.error {
     color: #ff7b7b;
 }
 
 .program-status.starting {
     color: #ffd166;
-}
-
-.program-status.error {
-    color: #ff7b7b;
 }
 
 .program-button {
