@@ -1,4 +1,3 @@
-alert("NOUVEAU DASHBOARD.JS CHARGÉ");
 const programGrid =
     document.getElementById("programGrid");
 
@@ -16,8 +15,25 @@ let refreshInProgress = false;
 
 
 /* ===========================
-   LISTE DES PROGRAMMES
+   OUTILS
 =========================== */
+
+function setStatusAppearance(
+    statusElement,
+    state
+) {
+    statusElement.classList.remove(
+        "running",
+        "stopped",
+        "starting",
+        "error"
+    );
+
+    if (state) {
+        statusElement.classList.add(state);
+    }
+}
+
 
 function createProgramsSignature(
     programsList
@@ -34,6 +50,10 @@ function createProgramsSignature(
     );
 }
 
+
+/* ===========================
+   CARTES DYNAMIQUES
+=========================== */
 
 function removeDynamicProgramCards() {
     for (
@@ -58,16 +78,13 @@ function createProgramCard(program) {
         document.createElement("article");
 
     card.className = "status";
-    card.dataset.programId =
-        program.id;
-
+    card.dataset.programId = program.id;
 
     const information =
         document.createElement("div");
 
     information.className =
         "program-info";
-
 
     const name =
         document.createElement("span");
@@ -79,28 +96,21 @@ function createProgramCard(program) {
         program.name ||
         "Logiciel sans nom";
 
-
     const status =
         document.createElement("strong");
 
     status.className =
         "program-status stopped";
 
-    status.textContent =
-        "Arrêté";
-
+    status.textContent = "Arrêté";
 
     const button =
         document.createElement("button");
 
     button.type = "button";
-
     button.className =
         "program-button";
-
-    button.textContent =
-        "Lancer";
-
+    button.textContent = "Lancer";
 
     information.appendChild(name);
     information.appendChild(status);
@@ -108,16 +118,12 @@ function createProgramCard(program) {
     card.appendChild(information);
     card.appendChild(button);
 
-
     button.addEventListener(
         "click",
         () => {
-            handleProgramAction(
-                program.id
-            );
+            handleProgramAction(program.id);
         }
     );
-
 
     programElements.set(
         program.id,
@@ -158,11 +164,8 @@ function renderPrograms() {
     }
 
     for (const program of programs) {
-        const card =
-            createProgramCard(program);
-
         programGrid.insertBefore(
-            card,
+            createProgramCard(program),
             dynamicProgramsAnchor
         );
     }
@@ -170,27 +173,8 @@ function renderPrograms() {
 
 
 /* ===========================
-   APPARENCE DES STATUTS
+   ÉTATS DES PROGRAMMES
 =========================== */
-
-function setStatusAppearance(
-    statusElement,
-    state
-) {
-    statusElement.classList.remove(
-        "running",
-        "stopped",
-        "starting",
-        "error"
-    );
-
-    if (state) {
-        statusElement.classList.add(
-            state
-        );
-    }
-}
-
 
 function displayProgramStatus(
     programId,
@@ -207,9 +191,7 @@ function displayProgramStatus(
     }
 
     elements.status.textContent =
-        isRunning
-            ? "Ouvert"
-            : "Arrêté";
+        isRunning ? "Ouvert" : "Arrêté";
 
     setStatusAppearance(
         elements.status,
@@ -219,15 +201,10 @@ function displayProgramStatus(
     );
 
     elements.button.textContent =
-        isRunning
-            ? "Fermer"
-            : "Lancer";
+        isRunning ? "Fermer" : "Lancer";
 
     elements.button.disabled = false;
-
-    elements.card.classList.remove(
-        "busy"
-    );
+    elements.card.classList.remove("busy");
 }
 
 
@@ -243,10 +220,7 @@ function displayBusyState(
     }
 
     busyPrograms.add(programId);
-
-    elements.card.classList.add(
-        "busy"
-    );
+    elements.card.classList.add("busy");
 
     elements.status.textContent =
         action === "close"
@@ -279,13 +253,9 @@ function displayProgramError(
     }
 
     busyPrograms.delete(programId);
+    elements.card.classList.remove("busy");
 
-    elements.card.classList.remove(
-        "busy"
-    );
-
-    elements.status.textContent =
-        "Erreur";
+    elements.status.textContent = "Erreur";
 
     setStatusAppearance(
         elements.status,
@@ -300,10 +270,6 @@ function displayProgramError(
     elements.button.disabled = false;
 }
 
-
-/* ===========================
-   LANCER / FERMER
-=========================== */
 
 async function handleProgramAction(
     programId
@@ -323,9 +289,7 @@ async function handleProgramAction(
         "Fermer";
 
     const action =
-        shouldClose
-            ? "close"
-            : "launch";
+        shouldClose ? "close" : "launch";
 
     displayBusyState(
         programId,
@@ -335,11 +299,9 @@ async function handleProgramAction(
     try {
         const result =
             shouldClose
-                ? await window
-                    .skyDeckAPI
+                ? await window.skyDeckAPI
                     .closeProgram(programId)
-                : await window
-                    .skyDeckAPI
+                : await window.skyDeckAPI
                     .launchProgram(programId);
 
         if (!result.success) {
@@ -353,15 +315,10 @@ async function handleProgramAction(
 
         window.setTimeout(
             async () => {
-                busyPrograms.delete(
-                    programId
-                );
-
+                busyPrograms.delete(programId);
                 await refreshAll();
             },
-            shouldClose
-                ? 1200
-                : 1600
+            shouldClose ? 1200 : 1600
         );
     } catch (error) {
         console.error(
@@ -378,7 +335,7 @@ async function handleProgramAction(
 
 
 /* ===========================
-   CHARGEMENT DES PROGRAMMES
+   CHARGEMENT ET ACTUALISATION
 =========================== */
 
 async function loadPrograms(
@@ -386,8 +343,7 @@ async function loadPrograms(
 ) {
     try {
         const result =
-            await window
-                .skyDeckAPI
+            await window.skyDeckAPI
                 .getPrograms();
 
         if (!result.success) {
@@ -397,9 +353,7 @@ async function loadPrograms(
         }
 
         const nextPrograms =
-            Array.isArray(
-                result.programs
-            )
+            Array.isArray(result.programs)
                 ? result.programs
                 : [];
 
@@ -414,9 +368,7 @@ async function loadPrograms(
                 programsSignature
         ) {
             programs =
-                structuredClone(
-                    nextPrograms
-                );
+                structuredClone(nextPrograms);
 
             programsSignature =
                 nextSignature;
@@ -436,15 +388,59 @@ async function loadPrograms(
 }
 
 
-/* ===========================
-   ACTUALISATION DES STATUTS
-=========================== */
+function displayOverlayStatus(
+    isRunning
+) {
+    const status =
+        document.getElementById(
+            "overlayStatus"
+        );
+
+    const button =
+        document.getElementById(
+            "launchOverlay"
+        );
+
+    status.textContent =
+        isRunning ? "Ouvert" : "Fermé";
+
+    setStatusAppearance(
+        status,
+        isRunning
+            ? "running"
+            : "stopped"
+    );
+
+    button.textContent =
+        isRunning ? "Afficher" : "Ouvrir";
+
+    button.disabled = false;
+}
+
+
+function resetRestreamStatus() {
+    const status =
+        document.getElementById(
+            "restreamStatus"
+        );
+
+    const button =
+        document.getElementById(
+            "openRestream"
+        );
+
+    status.textContent = "Service web";
+    setStatusAppearance(status, null);
+
+    button.textContent = "Ouvrir";
+    button.disabled = false;
+}
+
 
 async function refreshStatuses() {
     try {
         const result =
-            await window
-                .skyDeckAPI
+            await window.skyDeckAPI
                 .getProgramStatuses();
 
         if (!result.success) {
@@ -467,46 +463,18 @@ async function refreshStatuses() {
                 result.statuses.overlay
             )
         );
+
+        /*
+         * Restream n'est jamais détecté.
+         * Son état reste toujours neutre.
+         */
+        resetRestreamStatus();
     } catch (error) {
         console.error(
             "Erreur actualisation états :",
             error
         );
     }
-}
-
-
-function displayOverlayStatus(
-    isRunning
-) {
-    const status =
-        document.getElementById(
-            "overlayStatus"
-        );
-
-    const button =
-        document.getElementById(
-            "launchOverlay"
-        );
-
-    status.textContent =
-        isRunning
-            ? "Ouvert"
-            : "Fermé";
-
-    setStatusAppearance(
-        status,
-        isRunning
-            ? "running"
-            : "stopped"
-    );
-
-    button.textContent =
-        isRunning
-            ? "Afficher"
-            : "Ouvrir";
-
-    button.disabled = false;
 }
 
 
@@ -531,9 +499,7 @@ async function refreshAll() {
 =========================== */
 
 document
-    .getElementById(
-        "launchOverlay"
-    )
+    .getElementById("launchOverlay")
     .addEventListener(
         "click",
         async event => {
@@ -543,8 +509,7 @@ document
             button.disabled = true;
 
             try {
-                await window
-                    .skyDeckAPI
+                await window.skyDeckAPI
                     .launchOverlay();
 
                 await refreshStatuses();
@@ -565,49 +530,29 @@ document
 =========================== */
 
 document
-    .getElementById(
-        "openRestream"
-    )
+    .getElementById("openRestream")
     .addEventListener(
         "click",
         async event => {
             const button =
                 event.currentTarget;
 
-            const status =
-                document.getElementById(
-                    "restreamStatus"
-                );
-
             button.disabled = true;
-
             button.textContent =
                 "Ouverture...";
 
-            /*
-             * Restream est une page web externe.
-             * SkyDeck ne peut pas détecter si
-             * l'onglet du navigateur est ouvert
-             * ou fermé.
-             */
-            status.textContent =
-                "Service web";
-
-            setStatusAppearance(
-                status,
-                null
-            );
-
             try {
                 const result =
-                    await window
-                        .skyDeckAPI
+                    await window.skyDeckAPI
                         .openRestream();
 
                 if (!result.success) {
-                    status.textContent =
-                        "Erreur";
+                    const status =
+                        document.getElementById(
+                            "restreamStatus"
+                        );
 
+                    status.textContent = "Erreur";
                     setStatusAppearance(
                         status,
                         "error"
@@ -618,30 +563,18 @@ document
 
                     return;
                 }
-
-                /*
-                 * On conserve toujours un état neutre.
-                 * On n'affiche jamais "Ouvert".
-                 */
-                status.textContent =
-                    "Service web";
-
-                setStatusAppearance(
-                    status,
-                    null
-                );
-
-                button.textContent =
-                    "Ouvrir";
             } catch (error) {
                 console.error(
                     "Erreur Restream :",
                     error
                 );
 
-                status.textContent =
-                    "Erreur";
+                const status =
+                    document.getElementById(
+                        "restreamStatus"
+                    );
 
+                status.textContent = "Erreur";
                 setStatusAppearance(
                     status,
                     "error"
@@ -649,8 +582,18 @@ document
 
                 button.textContent =
                     "Réessayer";
+
+                return;
             } finally {
-                button.disabled = false;
+                /*
+                 * Après ouverture du navigateur,
+                 * SkyDeck revient toujours à
+                 * l'état neutre.
+                 */
+                window.setTimeout(
+                    resetRestreamStatus,
+                    250
+                );
             }
         }
     );
@@ -661,15 +604,12 @@ document
 =========================== */
 
 document
-    .getElementById(
-        "openSettings"
-    )
+    .getElementById("openSettings")
     .addEventListener(
         "click",
         async () => {
             try {
-                await window
-                    .skyDeckAPI
+                await window.skyDeckAPI
                     .openSettings();
             } catch (error) {
                 console.error(
@@ -682,35 +622,17 @@ document
 
 
 /* ===========================
-   DÉMARRAGE DU DASHBOARD
+   INITIALISATION
 =========================== */
 
 window.addEventListener(
     "focus",
-    () => {
-        refreshAll();
-    }
+    refreshAll
 );
 
 
 async function initializeDashboard() {
-    /*
-     * Force immédiatement l’état neutre
-     * de Restream, même si une ancienne
-     * version affichait "Ouvert".
-     */
-    const restreamStatus =
-        document.getElementById(
-            "restreamStatus"
-        );
-
-    restreamStatus.textContent =
-        "Service web";
-
-    setStatusAppearance(
-        restreamStatus,
-        null
-    );
+    resetRestreamStatus();
 
     const loaded =
         await loadPrograms(true);
