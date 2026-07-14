@@ -30,7 +30,9 @@ function setStatusAppearance(
     );
 
     if (state) {
-        statusElement.classList.add(state);
+        statusElement.classList.add(
+            state
+        );
     }
 }
 
@@ -48,6 +50,113 @@ function createProgramsSignature(
                 program.processNames || []
         }))
     );
+}
+
+
+function getInitials(name) {
+    const words =
+        String(name || "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+    if (words.length === 0) {
+        return "?";
+    }
+
+    return words
+        .slice(0, 2)
+        .map(word =>
+            word.charAt(0).toUpperCase()
+        )
+        .join("");
+}
+
+
+/* ===========================
+   ICÔNES
+=========================== */
+
+function createIconElement(program) {
+    const container =
+        document.createElement("div");
+
+    container.className =
+        "program-icon";
+
+    const fallback =
+        document.createElement("span");
+
+    fallback.className =
+        "program-icon-fallback";
+
+    fallback.textContent =
+        getInitials(program.name);
+
+    container.appendChild(fallback);
+
+    loadProgramIcon(
+        program.id,
+        container,
+        fallback
+    );
+
+    return container;
+}
+
+
+async function loadProgramIcon(
+    programId,
+    container,
+    fallback
+) {
+    try {
+        const result =
+            await window
+                .skyDeckAPI
+                .getProgramIcon(
+                    programId
+                );
+
+        if (
+            !result.success ||
+            !result.iconDataUrl
+        ) {
+            return;
+        }
+
+        const image =
+            document.createElement("img");
+
+        image.className =
+            "program-icon-image";
+
+        image.alt = "";
+
+        image.src =
+            result.iconDataUrl;
+
+        image.addEventListener(
+            "load",
+            () => {
+                fallback.remove();
+            }
+        );
+
+        image.addEventListener(
+            "error",
+            () => {
+                image.remove();
+            }
+        );
+
+        container.appendChild(image);
+    } catch (error) {
+        console.warn(
+            `Icône indisponible pour ${programId} :`,
+            error
+        );
+    }
 }
 
 
@@ -79,6 +188,9 @@ function createProgramCard(program) {
 
     card.className = "status";
     card.dataset.programId = program.id;
+
+    const icon =
+        createIconElement(program);
 
     const information =
         document.createElement("div");
@@ -115,13 +227,16 @@ function createProgramCard(program) {
     information.appendChild(name);
     information.appendChild(status);
 
+    card.appendChild(icon);
     card.appendChild(information);
     card.appendChild(button);
 
     button.addEventListener(
         "click",
         () => {
-            handleProgramAction(program.id);
+            handleProgramAction(
+                program.id
+            );
         }
     );
 
@@ -129,6 +244,7 @@ function createProgramCard(program) {
         program.id,
         {
             card,
+            icon,
             name,
             status,
             button
@@ -181,7 +297,9 @@ function displayProgramStatus(
     isRunning
 ) {
     const elements =
-        programElements.get(programId);
+        programElements.get(
+            programId
+        );
 
     if (
         !elements ||
@@ -191,7 +309,9 @@ function displayProgramStatus(
     }
 
     elements.status.textContent =
-        isRunning ? "Ouvert" : "Arrêté";
+        isRunning
+            ? "Ouvert"
+            : "Arrêté";
 
     setStatusAppearance(
         elements.status,
@@ -201,10 +321,15 @@ function displayProgramStatus(
     );
 
     elements.button.textContent =
-        isRunning ? "Fermer" : "Lancer";
+        isRunning
+            ? "Fermer"
+            : "Lancer";
 
     elements.button.disabled = false;
-    elements.card.classList.remove("busy");
+
+    elements.card.classList.remove(
+        "busy"
+    );
 }
 
 
@@ -213,14 +338,19 @@ function displayBusyState(
     action
 ) {
     const elements =
-        programElements.get(programId);
+        programElements.get(
+            programId
+        );
 
     if (!elements) {
         return;
     }
 
     busyPrograms.add(programId);
-    elements.card.classList.add("busy");
+
+    elements.card.classList.add(
+        "busy"
+    );
 
     elements.status.textContent =
         action === "close"
@@ -246,16 +376,22 @@ function displayProgramError(
     previousAction
 ) {
     const elements =
-        programElements.get(programId);
+        programElements.get(
+            programId
+        );
 
     if (!elements) {
         return;
     }
 
     busyPrograms.delete(programId);
-    elements.card.classList.remove("busy");
 
-    elements.status.textContent = "Erreur";
+    elements.card.classList.remove(
+        "busy"
+    );
+
+    elements.status.textContent =
+        "Erreur";
 
     setStatusAppearance(
         elements.status,
@@ -275,7 +411,9 @@ async function handleProgramAction(
     programId
 ) {
     const elements =
-        programElements.get(programId);
+        programElements.get(
+            programId
+        );
 
     if (
         !elements ||
@@ -289,7 +427,9 @@ async function handleProgramAction(
         "Fermer";
 
     const action =
-        shouldClose ? "close" : "launch";
+        shouldClose
+            ? "close"
+            : "launch";
 
     displayBusyState(
         programId,
@@ -299,10 +439,16 @@ async function handleProgramAction(
     try {
         const result =
             shouldClose
-                ? await window.skyDeckAPI
-                    .closeProgram(programId)
-                : await window.skyDeckAPI
-                    .launchProgram(programId);
+                ? await window
+                    .skyDeckAPI
+                    .closeProgram(
+                        programId
+                    )
+                : await window
+                    .skyDeckAPI
+                    .launchProgram(
+                        programId
+                    );
 
         if (!result.success) {
             displayProgramError(
@@ -315,10 +461,15 @@ async function handleProgramAction(
 
         window.setTimeout(
             async () => {
-                busyPrograms.delete(programId);
+                busyPrograms.delete(
+                    programId
+                );
+
                 await refreshAll();
             },
-            shouldClose ? 1200 : 1600
+            shouldClose
+                ? 1200
+                : 1600
         );
     } catch (error) {
         console.error(
@@ -343,7 +494,8 @@ async function loadPrograms(
 ) {
     try {
         const result =
-            await window.skyDeckAPI
+            await window
+                .skyDeckAPI
                 .getPrograms();
 
         if (!result.success) {
@@ -353,7 +505,9 @@ async function loadPrograms(
         }
 
         const nextPrograms =
-            Array.isArray(result.programs)
+            Array.isArray(
+                result.programs
+            )
                 ? result.programs
                 : [];
 
@@ -368,7 +522,9 @@ async function loadPrograms(
                 programsSignature
         ) {
             programs =
-                structuredClone(nextPrograms);
+                structuredClone(
+                    nextPrograms
+                );
 
             programsSignature =
                 nextSignature;
@@ -402,7 +558,9 @@ function displayOverlayStatus(
         );
 
     status.textContent =
-        isRunning ? "Ouvert" : "Fermé";
+        isRunning
+            ? "Ouvert"
+            : "Fermé";
 
     setStatusAppearance(
         status,
@@ -412,7 +570,9 @@ function displayOverlayStatus(
     );
 
     button.textContent =
-        isRunning ? "Afficher" : "Ouvrir";
+        isRunning
+            ? "Afficher"
+            : "Ouvrir";
 
     button.disabled = false;
 }
@@ -429,8 +589,13 @@ function resetRestreamStatus() {
             "openRestream"
         );
 
-    status.textContent = "Service web";
-    setStatusAppearance(status, null);
+    status.textContent =
+        "Service web";
+
+    setStatusAppearance(
+        status,
+        null
+    );
 
     button.textContent = "Ouvrir";
     button.disabled = false;
@@ -440,7 +605,8 @@ function resetRestreamStatus() {
 async function refreshStatuses() {
     try {
         const result =
-            await window.skyDeckAPI
+            await window
+                .skyDeckAPI
                 .getProgramStatuses();
 
         if (!result.success) {
@@ -464,10 +630,6 @@ async function refreshStatuses() {
             )
         );
 
-        /*
-         * Restream n'est jamais détecté.
-         * Son état reste toujours neutre.
-         */
         resetRestreamStatus();
     } catch (error) {
         console.error(
@@ -499,7 +661,9 @@ async function refreshAll() {
 =========================== */
 
 document
-    .getElementById("launchOverlay")
+    .getElementById(
+        "launchOverlay"
+    )
     .addEventListener(
         "click",
         async event => {
@@ -509,7 +673,8 @@ document
             button.disabled = true;
 
             try {
-                await window.skyDeckAPI
+                await window
+                    .skyDeckAPI
                     .launchOverlay();
 
                 await refreshStatuses();
@@ -530,7 +695,9 @@ document
 =========================== */
 
 document
-    .getElementById("openRestream")
+    .getElementById(
+        "openRestream"
+    )
     .addEventListener(
         "click",
         async event => {
@@ -538,12 +705,14 @@ document
                 event.currentTarget;
 
             button.disabled = true;
+
             button.textContent =
                 "Ouverture...";
 
             try {
                 const result =
-                    await window.skyDeckAPI
+                    await window
+                        .skyDeckAPI
                         .openRestream();
 
                 if (!result.success) {
@@ -552,7 +721,9 @@ document
                             "restreamStatus"
                         );
 
-                    status.textContent = "Erreur";
+                    status.textContent =
+                        "Erreur";
+
                     setStatusAppearance(
                         status,
                         "error"
@@ -574,7 +745,9 @@ document
                         "restreamStatus"
                     );
 
-                status.textContent = "Erreur";
+                status.textContent =
+                    "Erreur";
+
                 setStatusAppearance(
                     status,
                     "error"
@@ -585,11 +758,6 @@ document
 
                 return;
             } finally {
-                /*
-                 * Après ouverture du navigateur,
-                 * SkyDeck revient toujours à
-                 * l'état neutre.
-                 */
                 window.setTimeout(
                     resetRestreamStatus,
                     250
@@ -604,12 +772,15 @@ document
 =========================== */
 
 document
-    .getElementById("openSettings")
+    .getElementById(
+        "openSettings"
+    )
     .addEventListener(
         "click",
         async () => {
             try {
-                await window.skyDeckAPI
+                await window
+                    .skyDeckAPI
                     .openSettings();
             } catch (error) {
                 console.error(

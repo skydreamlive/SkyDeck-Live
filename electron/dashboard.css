@@ -15,7 +15,10 @@ body {
         );
 
     color: white;
-    font-family: "Segoe UI", Arial, sans-serif;
+    font-family:
+        "Segoe UI",
+        Arial,
+        sans-serif;
 }
 
 .dashboard {
@@ -27,12 +30,15 @@ body {
     display: flex;
     flex-direction: column;
 
-    background: rgba(8, 16, 24, 0.94);
+    background:
+        rgba(8, 16, 24, 0.94);
+
     border: 2px solid #00bfff;
     border-radius: 24px;
 
     box-shadow:
-        0 0 35px rgba(0, 191, 255, 0.35);
+        0 0 35px
+        rgba(0, 191, 255, 0.35);
 }
 
 .header {
@@ -59,10 +65,13 @@ h1 {
 button {
     border: 0;
     border-radius: 12px;
+
     background: #00bfff;
     color: #041018;
+
     font-size: 14px;
     font-weight: 800;
+
     cursor: pointer;
 }
 
@@ -82,8 +91,10 @@ button:disabled {
 
 .program-grid {
     display: grid;
+
     grid-template-columns:
         repeat(2, minmax(0, 1fr));
+
     gap: 14px 18px;
 }
 
@@ -92,23 +103,65 @@ button:disabled {
     padding: 14px 16px;
 
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
 
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    background:
+        rgba(255, 255, 255, 0.05);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.04);
+
     border-radius: 12px;
 }
 
 .status.busy {
-    border-color: rgba(255, 209, 102, 0.45);
+    border-color:
+        rgba(255, 209, 102, 0.45);
+
     box-shadow:
-        0 0 14px rgba(255, 209, 102, 0.12);
+        0 0 14px
+        rgba(255, 209, 102, 0.12);
+}
+
+.program-icon {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+
+    display: grid;
+    place-items: center;
+
+    overflow: hidden;
+
+    background:
+        rgba(255, 255, 255, 0.07);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    border-radius: 11px;
+}
+
+.program-icon-image {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+}
+
+.program-icon-fallback {
+    color: #67dfff;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
 }
 
 .program-info {
     min-width: 0;
+    flex: 1 1 auto;
+
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -116,6 +169,7 @@ button:disabled {
 
 .program-name {
     overflow: hidden;
+
     font-size: 16px;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -146,16 +200,22 @@ button:disabled {
 
 .empty-message {
     grid-column: 1 / -1;
+
     padding: 28px;
+
     color: #94a6b2;
     text-align: center;
-    background: rgba(255, 255, 255, 0.04);
+
+    background:
+        rgba(255, 255, 255, 0.04);
+
     border-radius: 12px;
 }
 
 .note {
     margin-top: auto;
     padding-top: 24px;
+
     color: #94a6b2;
     font-size: 13px;
     text-align: center;
