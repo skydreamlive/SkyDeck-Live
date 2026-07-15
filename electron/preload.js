@@ -59,6 +59,28 @@ contextBridge.exposeInMainWorld(
             ipcRenderer.invoke(
                 "save-programs",
                 programs
-            )
+            ),
+
+        tiktok: {
+            getStatus: () =>
+                ipcRenderer.invoke(
+                    "tiktok-status"
+                ),
+
+            connect: () =>
+                ipcRenderer.invoke(
+                    "tiktok-connect"
+                ),
+
+            disconnect: () =>
+                ipcRenderer.invoke(
+                    "tiktok-disconnect"
+                ),
+
+            getFollowers: () =>
+                ipcRenderer.invoke(
+                    "tiktok-followers"
+                )
+        }
     }
 );

@@ -77,6 +77,63 @@
             font-size: 13px;
         }
 
+        .tiktok-panel {
+            margin-bottom: 22px;
+            padding: 18px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+
+            background:
+                rgba(255, 255, 255, 0.05);
+
+            border:
+                1px solid
+                rgba(255, 255, 255, 0.08);
+
+            border-radius: 12px;
+        }
+
+        .tiktok-info {
+            min-width: 0;
+        }
+
+        .tiktok-info h2 {
+            margin: 0 0 7px;
+            font-size: 18px;
+        }
+
+        .tiktok-status {
+            color: #a9b9c4;
+            font-weight: 700;
+        }
+
+        .tiktok-status.connected {
+            color: #49e58b;
+        }
+
+        .tiktok-status.error {
+            color: #ff7b7b;
+        }
+
+        .tiktok-followers {
+            margin-top: 4px;
+            color: #67dfff;
+            font-size: 14px;
+        }
+
+        .tiktok-button {
+            min-width: 150px;
+            flex: 0 0 auto;
+        }
+
+        .tiktok-button.disconnect {
+            background: #742f3b;
+            color: white;
+        }
+
         .program-list {
             display: grid;
             gap: 14px;
@@ -298,6 +355,17 @@
 
             border-radius: 12px;
         }
+
+        @media (max-width: 720px) {
+            .tiktok-panel {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .tiktok-button {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 
@@ -319,6 +387,33 @@
                 ou utilise les flèches.
             </div>
         </header>
+
+        <section class="tiktok-panel">
+            <div class="tiktok-info">
+                <h2>TikTok</h2>
+
+                <div
+                    id="tiktokStatus"
+                    class="tiktok-status"
+                >
+                    Vérification...
+                </div>
+
+                <div
+                    id="tiktokFollowers"
+                    class="tiktok-followers"
+                ></div>
+            </div>
+
+            <button
+                id="tiktokAction"
+                class="tiktok-button"
+                type="button"
+                disabled
+            >
+                Chargement...
+            </button>
+        </section>
 
         <section
             id="programList"
@@ -369,8 +464,24 @@
                 "saveSettings"
             );
 
+        const tiktokStatusElement =
+            document.getElementById(
+                "tiktokStatus"
+            );
+
+        const tiktokFollowersElement =
+            document.getElementById(
+                "tiktokFollowers"
+            );
+
+        const tiktokActionButton =
+            document.getElementById(
+                "tiktokAction"
+            );
+
         let programs = [];
         let draggedProgramId = null;
+        let tiktokConnected = false;
 
 
         function showMessage(
@@ -384,6 +495,213 @@
                 "error",
                 isError
             );
+        }
+
+
+        function formatFollowerCount(
+            value
+        ) {
+            return new Intl.NumberFormat(
+                "fr-FR"
+            ).format(value);
+        }
+
+
+        function displayTikTokState({
+            connected,
+            followerCount = null,
+            errorMessage = ""
+        }) {
+            tiktokConnected =
+                Boolean(connected);
+
+            tiktokStatusElement
+                .classList
+                .remove(
+                    "connected",
+                    "error"
+                );
+
+            tiktokActionButton
+                .classList
+                .remove(
+                    "disconnect"
+                );
+
+            if (errorMessage) {
+                tiktokStatusElement
+                    .textContent =
+                    errorMessage;
+
+                tiktokStatusElement
+                    .classList
+                    .add("error");
+
+                tiktokFollowersElement
+                    .textContent = "";
+
+                tiktokActionButton
+                    .textContent =
+                    tiktokConnected
+                        ? "Déconnecter"
+                        : "Réessayer";
+
+                if (tiktokConnected) {
+                    tiktokActionButton
+                        .classList
+                        .add(
+                            "disconnect"
+                        );
+                }
+
+                tiktokActionButton
+                    .disabled = false;
+
+                return;
+            }
+
+            if (tiktokConnected) {
+                tiktokStatusElement
+                    .textContent =
+                    "Connecté";
+
+                tiktokStatusElement
+                    .classList
+                    .add(
+                        "connected"
+                    );
+
+                tiktokFollowersElement
+                    .textContent =
+                    Number.isFinite(
+                        followerCount
+                    )
+                        ? `${formatFollowerCount(
+                            followerCount
+                        )} abonnés`
+                        : "";
+
+                tiktokActionButton
+                    .textContent =
+                    "Déconnecter";
+
+                tiktokActionButton
+                    .classList
+                    .add(
+                        "disconnect"
+                    );
+            } else {
+                tiktokStatusElement
+                    .textContent =
+                    "Non connecté";
+
+                tiktokFollowersElement
+                    .textContent = "";
+
+                tiktokActionButton
+                    .textContent =
+                    "Se connecter";
+            }
+
+            tiktokActionButton
+                .disabled = false;
+        }
+
+
+        async function loadTikTokStatus() {
+            tiktokActionButton.disabled =
+                true;
+
+            try {
+                const result =
+                    await window
+                        .skyDeckAPI
+                        .tiktok
+                        .getStatus();
+
+                if (!result.success) {
+                    displayTikTokState({
+                        connected:
+                            result.connected,
+                        errorMessage:
+                            result.message ||
+                            "Erreur TikTok."
+                    });
+
+                    return;
+                }
+
+                displayTikTokState({
+                    connected:
+                        result.connected,
+                    followerCount:
+                        result.followerCount
+                });
+            } catch (error) {
+                console.error(error);
+
+                displayTikTokState({
+                    connected: false,
+                    errorMessage:
+                        "Impossible de vérifier TikTok."
+                });
+            }
+        }
+
+
+        async function handleTikTokAction() {
+            tiktokActionButton.disabled =
+                true;
+
+            tiktokActionButton.textContent =
+                tiktokConnected
+                    ? "Déconnexion..."
+                    : "Connexion...";
+
+            try {
+                const result =
+                    tiktokConnected
+                        ? await window
+                            .skyDeckAPI
+                            .tiktok
+                            .disconnect()
+                        : await window
+                            .skyDeckAPI
+                            .tiktok
+                            .connect();
+
+                if (!result.success) {
+                    displayTikTokState({
+                        connected:
+                            result.connected,
+                        errorMessage:
+                            result.message ||
+                            "Erreur TikTok."
+                    });
+
+                    return;
+                }
+
+                displayTikTokState({
+                    connected:
+                        result.connected,
+                    followerCount:
+                        result.followerCount
+                });
+
+                showMessage(
+                    result.message || ""
+                );
+            } catch (error) {
+                console.error(error);
+
+                displayTikTokState({
+                    connected:
+                        tiktokConnected,
+                    errorMessage:
+                        "L’action TikTok a échoué."
+                });
+            }
         }
 
 
@@ -1307,6 +1625,13 @@
         );
 
 
+        tiktokActionButton
+            .addEventListener(
+                "click",
+                handleTikTokAction
+            );
+
+
         document
             .getElementById(
                 "closeSettings"
@@ -1319,7 +1644,10 @@
             );
 
 
-        loadPrograms();
+        Promise.all([
+            loadPrograms(),
+            loadTikTokStatus()
+        ]);
     </script>
 </body>
 </html>

@@ -49,5 +49,8 @@
       "shortcutName": "SkyDeck Live",
       "artifactName": "SkyDeck-Live-Setup-${version}.${ext}"
     }
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
   }
 }

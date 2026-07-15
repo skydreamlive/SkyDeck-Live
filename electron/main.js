@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const http = require("node:http");
 const path = require("node:path");
 
 const {
@@ -28,6 +29,9 @@ const {
     savePrograms
 } = require("./config");
 
+const TikTok =
+    require("./services/tiktok");
+
 
 /* ===========================
    CACHE ELECTRON
@@ -44,6 +48,309 @@ app.commandLine.appendSwitch(
     "disk-cache-dir",
     path.join(userDataPath, "Cache")
 );
+
+
+/* ===========================
+   SERVEUR LOCAL OVERLAY
+=========================== */
+
+const OVERLAY_HOST = "127.0.0.1";
+const OVERLAY_PORT = 3210;
+
+let overlayServer = null;
+
+const MIME_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+    ".webp": "image/webp",
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg"
+};
+
+
+function sendJson(
+    response,
+    statusCode,
+    payload
+) {
+    response.writeHead(
+        statusCode,
+        {
+            "Content-Type":
+                "application/json; charset=utf-8",
+
+            "Cache-Control":
+                "no-store",
+
+            "Access-Control-Allow-Origin":
+                "*"
+        }
+    );
+
+    response.end(
+        JSON.stringify(payload)
+    );
+}
+
+
+function resolveOverlayFile(
+    requestPath
+) {
+    const projectRoot =
+        path.join(
+            __dirname,
+            ".."
+        );
+
+    const normalizedPath =
+        requestPath === "/"
+            ? "/index.html"
+            : requestPath;
+
+    const decodedPath =
+        decodeURIComponent(
+            normalizedPath
+                .split("?")[0]
+        );
+
+    const relativePath =
+        decodedPath
+            .replace(/^\/+/, "");
+
+    const filePath =
+        path.resolve(
+            projectRoot,
+            relativePath
+        );
+
+    if (
+        !filePath.startsWith(
+            path.resolve(
+                projectRoot
+            )
+        )
+    ) {
+        return null;
+    }
+
+    return filePath;
+}
+
+
+async function handleOverlayRequest(
+    request,
+    response
+) {
+    const requestUrl =
+        new URL(
+            request.url,
+            `http://${OVERLAY_HOST}:${OVERLAY_PORT}`
+        );
+
+    if (
+        requestUrl.pathname ===
+        "/api/tiktok/followers"
+    ) {
+        try {
+            if (!TikTok.isConnected()) {
+                sendJson(
+                    response,
+                    200,
+                    {
+                        success: true,
+                        connected: false,
+                        followerCount: null
+                    }
+                );
+
+                return;
+            }
+
+            const followerCount =
+                await TikTok
+                    .getFollowerCount();
+
+            sendJson(
+                response,
+                200,
+                {
+                    success: true,
+                    connected: true,
+                    followerCount
+                }
+            );
+        } catch (error) {
+            console.error(
+                "Erreur API locale TikTok :",
+                error
+            );
+
+            sendJson(
+                response,
+                500,
+                {
+                    success: false,
+                    connected:
+                        TikTok.isConnected(),
+                    followerCount: null,
+                    message: error.message
+                }
+            );
+        }
+
+        return;
+    }
+
+    const filePath =
+        resolveOverlayFile(
+            requestUrl.pathname
+        );
+
+    if (
+        !filePath ||
+        !fs.existsSync(filePath) ||
+        !fs.statSync(filePath).isFile()
+    ) {
+        response.writeHead(
+            404,
+            {
+                "Content-Type":
+                    "text/plain; charset=utf-8"
+            }
+        );
+
+        response.end(
+            "Fichier introuvable."
+        );
+
+        return;
+    }
+
+    const extension =
+        path.extname(filePath)
+            .toLowerCase();
+
+    response.writeHead(
+        200,
+        {
+            "Content-Type":
+                MIME_TYPES[extension] ||
+                "application/octet-stream",
+
+            "Cache-Control":
+                extension === ".html" ||
+                extension === ".js" ||
+                extension === ".css"
+                    ? "no-store"
+                    : "public, max-age=3600"
+        }
+    );
+
+    fs.createReadStream(filePath)
+        .pipe(response);
+}
+
+
+function startOverlayServer() {
+    if (overlayServer) {
+        return Promise.resolve();
+    }
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+            const server =
+                http.createServer(
+                    (
+                        request,
+                        response
+                    ) => {
+                        handleOverlayRequest(
+                            request,
+                            response
+                        ).catch(error => {
+                            console.error(
+                                "Erreur serveur Overlay :",
+                                error
+                            );
+
+                            if (
+                                !response
+                                    .headersSent
+                            ) {
+                                response.writeHead(
+                                    500,
+                                    {
+                                        "Content-Type":
+                                            "text/plain; charset=utf-8"
+                                    }
+                                );
+                            }
+
+                            response.end(
+                                "Erreur interne SkyDeck."
+                            );
+                        });
+                    }
+                );
+
+            server.once(
+                "error",
+                error => {
+                    if (
+                        error.code ===
+                        "EADDRINUSE"
+                    ) {
+                        reject(
+                            new Error(
+                                `Le port ${OVERLAY_PORT} est déjà utilisé.`
+                            )
+                        );
+
+                        return;
+                    }
+
+                    reject(error);
+                }
+            );
+
+            server.listen(
+                OVERLAY_PORT,
+                OVERLAY_HOST,
+                () => {
+                    overlayServer =
+                        server;
+
+                    console.log(
+                        `Overlay disponible sur http://${OVERLAY_HOST}:${OVERLAY_PORT}/`
+                    );
+
+                    resolve();
+                }
+            );
+        }
+    );
+}
+
+
+function stopOverlayServer() {
+    if (!overlayServer) {
+        return;
+    }
+
+    overlayServer.close();
+    overlayServer = null;
+}
 
 
 /* ===========================
@@ -139,12 +446,8 @@ function createOverlayWindow() {
         }
     });
 
-    overlayWindow.loadFile(
-        path.join(
-            __dirname,
-            "..",
-            "index.html"
-        )
+    overlayWindow.loadURL(
+        `http://${OVERLAY_HOST}:${OVERLAY_PORT}/`
     );
 
     overlayWindow.on(
@@ -456,221 +759,393 @@ function cleanPrograms(programs) {
    DÉMARRAGE ELECTRON
 =========================== */
 
-app.whenReady().then(() => {
-    ipcMain.handle(
-        "launch-overlay",
-        async () => {
-            return createOverlayWindow();
-        }
-    );
+app.whenReady().then(
+    async () => {
+        try {
+            await startOverlayServer();
+        } catch (error) {
+            console.error(
+                "Impossible de démarrer le serveur Overlay :",
+                error
+            );
 
-    ipcMain.handle(
-        "open-settings",
-        async () => {
-            return createSettingsWindow();
-        }
-    );
-
-    ipcMain.handle(
-        "launch-program",
-        async (_event, programId) => {
-            return await launchProgram(
-                programId
+            dialog.showErrorBox(
+                "SkyDeck Live",
+                error.message
             );
         }
-    );
 
-    ipcMain.handle(
-        "close-program",
-        async (_event, programId) => {
-            return await closeProgram(
-                programId
-            );
-        }
-    );
+        ipcMain.handle(
+            "launch-overlay",
+            async () => {
+                return createOverlayWindow();
+            }
+        );
 
-    ipcMain.handle(
-        "get-program-statuses",
-        async () => {
-            return await getProgramStatuses(
-                overlayWindow
-            );
-        }
-    );
+        ipcMain.handle(
+            "open-settings",
+            async () => {
+                return createSettingsWindow();
+            }
+        );
 
-    ipcMain.handle(
-        "get-program-icon",
-        async (_event, programId) => {
-            return await getProgramIcon(
-                programId
-            );
-        }
-    );
-
-    ipcMain.handle(
-        "open-restream",
-        async () => {
-            try {
-                await shell.openExternal(
-                    "https://restream.io/channel"
+        ipcMain.handle(
+            "launch-program",
+            async (_event, programId) => {
+                return await launchProgram(
+                    programId
                 );
+            }
+        );
 
+        ipcMain.handle(
+            "close-program",
+            async (_event, programId) => {
+                return await closeProgram(
+                    programId
+                );
+            }
+        );
+
+        ipcMain.handle(
+            "get-program-statuses",
+            async () => {
+                return await getProgramStatuses(
+                    overlayWindow
+                );
+            }
+        );
+
+        ipcMain.handle(
+            "get-program-icon",
+            async (_event, programId) => {
+                return await getProgramIcon(
+                    programId
+                );
+            }
+        );
+
+        ipcMain.handle(
+            "open-restream",
+            async () => {
+                try {
+                    await shell.openExternal(
+                        "https://restream.io/channel"
+                    );
+
+                    return {
+                        success: true,
+                        message: "Restream ouvert."
+                    };
+                } catch (error) {
+                    console.error(
+                        "Erreur ouverture Restream :",
+                        error
+                    );
+
+                    return {
+                        success: false,
+                        message:
+                            "Impossible d’ouvrir Restream."
+                    };
+                }
+            }
+        );
+
+        ipcMain.handle(
+            "get-programs",
+            async () => {
                 return {
                     success: true,
-                    message: "Restream ouvert."
-                };
-            } catch (error) {
-                console.error(
-                    "Erreur ouverture Restream :",
-                    error
-                );
-
-                return {
-                    success: false,
-                    message:
-                        "Impossible d’ouvrir Restream."
+                    programs:
+                        getProgramsList()
                 };
             }
-        }
-    );
+        );
 
-    ipcMain.handle(
-        "get-programs",
-        async () => {
-            return {
-                success: true,
-                programs: getProgramsList()
-            };
-        }
-    );
-
-    ipcMain.handle(
-        "browse-program",
-        async (
-            _event,
-            currentPath = ""
-        ) => {
-            const result =
-                await dialog.showOpenDialog(
-                    settingsWindow ||
-                    dashboardWindow,
-                    {
-                        title:
-                            "Choisir un programme",
-
-                        defaultPath:
-                            currentPath ||
-                            undefined,
-
-                        properties: [
-                            "openFile"
-                        ],
-
-                        filters: [
+        ipcMain.handle(
+            "browse-program",
+            async (
+                _event,
+                currentPath = ""
+            ) => {
+                const result =
+                    await dialog
+                        .showOpenDialog(
+                            settingsWindow ||
+                            dashboardWindow,
                             {
-                                name:
-                                    "Programmes Windows",
+                                title:
+                                    "Choisir un programme",
 
-                                extensions: [
-                                    "exe",
-                                    "bat",
-                                    "cmd"
+                                defaultPath:
+                                    currentPath ||
+                                    undefined,
+
+                                properties: [
+                                    "openFile"
+                                ],
+
+                                filters: [
+                                    {
+                                        name:
+                                            "Programmes Windows",
+
+                                        extensions: [
+                                            "exe",
+                                            "bat",
+                                            "cmd"
+                                        ]
+                                    },
+                                    {
+                                        name:
+                                            "Tous les fichiers",
+
+                                        extensions: ["*"]
+                                    }
                                 ]
-                            },
-                            {
-                                name:
-                                    "Tous les fichiers",
-
-                                extensions: ["*"]
                             }
-                        ]
-                    }
-                );
+                        );
 
-            if (
-                result.canceled ||
-                result.filePaths.length === 0
-            ) {
-                return {
-                    success: false,
-                    canceled: true
-                };
-            }
+                if (
+                    result.canceled ||
+                    result.filePaths.length ===
+                        0
+                ) {
+                    return {
+                        success: false,
+                        canceled: true
+                    };
+                }
 
-            const selectedPath =
-                result.filePaths[0];
-
-            return {
-                success: true,
-                path: selectedPath,
-
-                processName:
-                    path.basename(
-                        selectedPath
-                    ),
-
-                suggestedName:
-                    path.basename(
-                        selectedPath,
-                        path.extname(
-                            selectedPath
-                        )
-                    )
-            };
-        }
-    );
-
-    ipcMain.handle(
-        "save-programs",
-        async (_event, programs) => {
-            try {
-                const cleanedPrograms =
-                    cleanPrograms(programs);
-
-                savePrograms(
-                    cleanedPrograms
-                );
-
-                replacePrograms(
-                    cleanedPrograms
-                );
-
-                programIconCache.clear();
+                const selectedPath =
+                    result.filePaths[0];
 
                 return {
                     success: true,
-                    message:
-                        "Configuration enregistrée."
-                };
-            } catch (error) {
-                console.error(
-                    "Erreur enregistrement programmes :",
-                    error
-                );
+                    path: selectedPath,
 
-                return {
-                    success: false,
-                    message: error.message
+                    processName:
+                        path.basename(
+                            selectedPath
+                        ),
+
+                    suggestedName:
+                        path.basename(
+                            selectedPath,
+                            path.extname(
+                                selectedPath
+                            )
+                        )
                 };
             }
-        }
-    );
+        );
 
-    createDashboardWindow();
+        ipcMain.handle(
+            "save-programs",
+            async (_event, programs) => {
+                try {
+                    const cleanedPrograms =
+                        cleanPrograms(programs);
 
-    app.on(
-        "activate",
-        () => {
-            if (
-                BrowserWindow
-                    .getAllWindows()
-                    .length === 0
-            ) {
-                createDashboardWindow();
+                    savePrograms(
+                        cleanedPrograms
+                    );
+
+                    replacePrograms(
+                        cleanedPrograms
+                    );
+
+                    programIconCache.clear();
+
+                    return {
+                        success: true,
+                        message:
+                            "Configuration enregistrée."
+                    };
+                } catch (error) {
+                    console.error(
+                        "Erreur enregistrement programmes :",
+                        error
+                    );
+
+                    return {
+                        success: false,
+                        message:
+                            error.message
+                    };
+                }
             }
-        }
-    );
-});
+        );
+
+
+        /* ===========================
+           TIKTOK
+        =========================== */
+
+        ipcMain.handle(
+            "tiktok-status",
+            async () => {
+                try {
+                    const connected =
+                        TikTok.isConnected();
+
+                    if (!connected) {
+                        return {
+                            success: true,
+                            connected: false,
+                            followerCount: null
+                        };
+                    }
+
+                    const followerCount =
+                        await TikTok
+                            .getFollowerCount();
+
+                    return {
+                        success: true,
+                        connected: true,
+                        followerCount
+                    };
+                } catch (error) {
+                    console.error(
+                        "Erreur statut TikTok :",
+                        error
+                    );
+
+                    return {
+                        success: false,
+                        connected:
+                            TikTok.isConnected(),
+                        followerCount: null,
+                        message:
+                            error.message
+                    };
+                }
+            }
+        );
+
+        ipcMain.handle(
+            "tiktok-connect",
+            async () => {
+                try {
+                    await TikTok.connect();
+
+                    const followerCount =
+                        await TikTok
+                            .getFollowerCount();
+
+                    return {
+                        success: true,
+                        connected: true,
+                        followerCount,
+                        message:
+                            "TikTok connecté."
+                    };
+                } catch (error) {
+                    console.error(
+                        "Erreur connexion TikTok :",
+                        error
+                    );
+
+                    return {
+                        success: false,
+                        connected: false,
+                        followerCount: null,
+                        message:
+                            error.message
+                    };
+                }
+            }
+        );
+
+        ipcMain.handle(
+            "tiktok-disconnect",
+            async () => {
+                try {
+                    await TikTok.disconnect();
+
+                    return {
+                        success: true,
+                        connected: false,
+                        followerCount: null,
+                        message:
+                            "TikTok déconnecté."
+                    };
+                } catch (error) {
+                    console.error(
+                        "Erreur déconnexion TikTok :",
+                        error
+                    );
+
+                    return {
+                        success: false,
+                        connected:
+                            TikTok.isConnected(),
+                        followerCount: null,
+                        message:
+                            error.message
+                    };
+                }
+            }
+        );
+
+        ipcMain.handle(
+            "tiktok-followers",
+            async () => {
+                try {
+                    const followerCount =
+                        await TikTok
+                            .getFollowerCount();
+
+                    return {
+                        success: true,
+                        connected: true,
+                        followerCount
+                    };
+                } catch (error) {
+                    console.error(
+                        "Erreur abonnés TikTok :",
+                        error
+                    );
+
+                    return {
+                        success: false,
+                        connected:
+                            TikTok.isConnected(),
+                        followerCount: null,
+                        message:
+                            error.message
+                    };
+                }
+            }
+        );
+
+
+        createDashboardWindow();
+
+        app.on(
+            "activate",
+            () => {
+                if (
+                    BrowserWindow
+                        .getAllWindows()
+                        .length === 0
+                ) {
+                    createDashboardWindow();
+                }
+            }
+        );
+    }
+);
+
+
+app.on(
+    "before-quit",
+    () => {
+        stopOverlayServer();
+    }
+);
 
 
 app.on(

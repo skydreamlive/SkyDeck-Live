@@ -1,31 +1,71 @@
-const alertBox = document.getElementById("alertBox");
-const alertIcon = document.getElementById("alertIcon");
-const alertTitle = document.getElementById("alertTitle");
-const alertUsername = document.getElementById("alertUsername");
-const alertMessage = document.getElementById("alertMessage");
+const alertBox =
+    document.getElementById("alertBox");
+
+const alertIcon =
+    document.getElementById("alertIcon");
+
+const alertTitle =
+    document.getElementById("alertTitle");
+
+const alertUsername =
+    document.getElementById("alertUsername");
+
+const alertMessage =
+    document.getElementById("alertMessage");
 
 const currentFollowersElement =
-    document.getElementById("currentFollowers");
+    document.getElementById(
+        "currentFollowers"
+    );
 
 const goalFollowersElement =
-    document.getElementById("goalFollowers");
+    document.getElementById(
+        "goalFollowers"
+    );
 
 const goalRemainingElement =
-    document.getElementById("goalRemaining");
+    document.getElementById(
+        "goalRemaining"
+    );
 
 const goalProgressElement =
-    document.getElementById("goalProgress");
+    document.getElementById(
+        "goalProgress"
+    );
 
 const goalPlaneElement =
-    document.getElementById("goalPlane");
+    document.getElementById(
+        "goalPlane"
+    );
 
 const goalPercentElement =
-    document.getElementById("goalPercent");
+    document.getElementById(
+        "goalPercent"
+    );
 
 let hideTimer = null;
 
+/*
+ * L'alerte de démonstration reste cachée au démarrage.
+ * Elle n'apparaît que lors d'un véritable événement TikFinity
+ * ou lorsque le mode test est activé.
+ */
+if (alertBox) {
+    alertBox.style.right = "-500px";
+}
 
-function showAlert(icon, title, username, message) {
+
+
+/* ===========================
+   ALERTES
+=========================== */
+
+function showAlert(
+    icon,
+    title,
+    username,
+    message
+) {
     alertIcon.textContent = icon;
     alertTitle.textContent = title;
     alertUsername.textContent = username;
@@ -35,11 +75,96 @@ function showAlert(icon, title, username, message) {
 
     clearTimeout(hideTimer);
 
-    hideTimer = setTimeout(() => {
-        alertBox.style.right = "-500px";
-    }, window.SKYDECK_CONFIG.alertDuration);
+    hideTimer = setTimeout(
+        () => {
+            alertBox.style.right =
+                "-500px";
+        },
+        window
+            .SKYDECK_CONFIG
+            .alertDuration
+    );
 }
 
+
+/* ===========================
+   SYNCHRONISATION TIKTOK
+=========================== */
+
+async function synchronizeTikTokFollowers() {
+    const syncUrl =
+        window
+            .SKYDECK_CONFIG
+            .followerSyncUrl ||
+        "/api/tiktok/followers";
+
+    try {
+        const response =
+            await fetch(
+                syncUrl,
+                {
+                    cache: "no-store"
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                `Erreur HTTP ${response.status}`
+            );
+        }
+
+        const result =
+            await response.json();
+
+        if (
+            !result.success ||
+            !result.connected ||
+            !Number.isFinite(
+                result.followerCount
+            )
+        ) {
+            console.warn(
+                "TikTok non synchronisé, valeur locale conservée.",
+                result.message || ""
+            );
+
+            return false;
+        }
+
+        window
+            .SKYDECK_CONFIG
+            .currentFollowers =
+            result.followerCount;
+
+        updateFollowerGoal(
+            result.followerCount
+        );
+
+        console.log(
+            `✅ ${result.followerCount.toLocaleString(
+                "fr-FR"
+            )} abonnés TikTok synchronisés`
+        );
+
+        return true;
+    } catch (error) {
+        console.warn(
+            "Synchronisation TikTok indisponible :",
+            error.message
+        );
+
+        /*
+         * L’overlay reste utilisable avec
+         * la valeur de secours de config.js.
+         */
+        return false;
+    }
+}
+
+
+/* ===========================
+   ÉVÉNEMENTS TIKFINITY
+=========================== */
 
 function getEventType(event) {
     return String(
@@ -88,8 +213,11 @@ function getGiftCount(event) {
 
 
 function handleTikFinityEvent(event) {
-    const type = getEventType(event);
-    const username = getUsername(event);
+    const type =
+        getEventType(event);
+
+    const username =
+        getUsername(event);
 
     switch (type) {
         case "follow":
@@ -102,10 +230,14 @@ function handleTikFinityEvent(event) {
 
             playFollowSound();
 
-            window.SKYDECK_CONFIG.currentFollowers += 1;
+            window
+                .SKYDECK_CONFIG
+                .currentFollowers += 1;
 
             updateFollowerGoal(
-                window.SKYDECK_CONFIG.currentFollowers
+                window
+                    .SKYDECK_CONFIG
+                    .currentFollowers
             );
             break;
 
@@ -118,7 +250,6 @@ function handleTikFinityEvent(event) {
             );
 
             playGiftSound();
-
             break;
 
         case "share":
@@ -130,120 +261,191 @@ function handleTikFinityEvent(event) {
             );
 
             playShareSound();
-
             break;
 
         case "like":
-            console.log(`Like reçu de ${username}`);
+            console.log(
+                `Like reçu de ${username}`
+            );
             break;
 
         case "join":
-            console.log(`${username} rejoint le live`);
+            console.log(
+                `${username} rejoint le live`
+            );
             break;
 
         default:
-            console.log("Événement ignoré :", type);
+            console.log(
+                "Événement ignoré :",
+                type
+            );
     }
 }
 
 
 function connectTikFinity() {
     const socket =
-        new WebSocket(window.SKYDECK_CONFIG.websocketUrl);
-
-    socket.addEventListener("open", () => {
-        console.log(
-            "✅ SkyDeck Live connecté à TikFinity"
+        new WebSocket(
+            window
+                .SKYDECK_CONFIG
+                .websocketUrl
         );
-    });
 
-    socket.addEventListener("message", message => {
-        let event;
-
-        try {
-            event = JSON.parse(message.data);
-        } catch {
-            return;
+    socket.addEventListener(
+        "open",
+        () => {
+            console.log(
+                "✅ SkyDeck Live connecté à TikFinity"
+            );
         }
+    );
 
-        console.log(event);
+    socket.addEventListener(
+        "message",
+        message => {
+            let event;
 
-        handleTikFinityEvent(event);
-    });
+            try {
+                event =
+                    JSON.parse(
+                        message.data
+                    );
+            } catch {
+                return;
+            }
 
-    socket.addEventListener("close", () => {
-        console.log(
-            "❌ Déconnecté — reconnexion dans 3 secondes"
-        );
+            console.log(event);
 
-        setTimeout(connectTikFinity, 3000);
-    });
+            handleTikFinityEvent(
+                event
+            );
+        }
+    );
 
-    socket.addEventListener("error", () => {
-        socket.close();
-    });
+    socket.addEventListener(
+        "close",
+        () => {
+            console.log(
+                "❌ Déconnecté — reconnexion dans 3 secondes"
+            );
+
+            setTimeout(
+                connectTikFinity,
+                3000
+            );
+        }
+    );
+
+    socket.addEventListener(
+        "error",
+        () => {
+            socket.close();
+        }
+    );
 }
 
 
-connectTikFinity();
-
-
-
-
-
+/* ===========================
+   BOUTONS DE TEST
+=========================== */
 
 document
     .getElementById("testFollow")
-    .addEventListener("click", () => {
-        showAlert(
-            "✈️",
-            "Nouveau passager",
-            "SkyPilot75",
-            "Bienvenue à bord"
-        );
-    playFollowSound();
-        window.SKYDECK_CONFIG.currentFollowers += 1;
+    ?.addEventListener(
+        "click",
+        () => {
+            showAlert(
+                "✈️",
+                "Nouveau passager",
+                "SkyPilot75",
+                "Bienvenue à bord"
+            );
 
-        updateFollowerGoal(
-            window.SKYDECK_CONFIG.currentFollowers
-        );
-    });
+            playFollowSound();
+
+            window
+                .SKYDECK_CONFIG
+                .currentFollowers += 1;
+
+            updateFollowerGoal(
+                window
+                    .SKYDECK_CONFIG
+                    .currentFollowers
+            );
+        }
+    );
 
 
 document
     .getElementById("testGift")
-    .addEventListener("click", () => {
-        showAlert(
-            "🎁",
-            "Soutien reçu",
-            "AeroFan",
-            "Rose ×10"
-        );
-        playGiftSound();
-    });
+    ?.addEventListener(
+        "click",
+        () => {
+            showAlert(
+                "🎁",
+                "Soutien reçu",
+                "AeroFan",
+                "Rose ×10"
+            );
+
+            playGiftSound();
+        }
+    );
 
 
 document
     .getElementById("testShare")
-    .addEventListener("click", () => {
-        showAlert(
-            "📡",
-            "Vol partagé",
-            "Captain22",
-            "Merci d'avoir partagé le live"
-        );
-        playShareSound();
-    });
+    ?.addEventListener(
+        "click",
+        () => {
+            showAlert(
+                "📡",
+                "Vol partagé",
+                "Captain22",
+                "Merci d'avoir partagé le live"
+            );
+
+            playShareSound();
+        }
+    );
+
 
 const testPanel =
-    document.getElementById("testPanel");
+    document.getElementById(
+        "testPanel"
+    );
 
 if (testPanel) {
     testPanel.style.display =
-        window.SKYDECK_CONFIG.testMode
-            ? "block"
-            : "none";
+        window
+            .SKYDECK_CONFIG
+            .testMode
+                ? "block"
+                : "none";
 }
-updateFollowerGoal(
-    window.SKYDECK_CONFIG.currentFollowers
-);
+
+
+/* ===========================
+   INITIALISATION
+=========================== */
+
+async function initializeOverlay() {
+    /*
+     * Affichage immédiat de la valeur
+     * de secours, puis remplacement
+     * par le compteur TikTok réel.
+     */
+    updateFollowerGoal(
+        window
+            .SKYDECK_CONFIG
+            .currentFollowers
+    );
+
+    await synchronizeTikTokFollowers();
+
+    connectTikFinity();
+}
+
+
+initializeOverlay();
