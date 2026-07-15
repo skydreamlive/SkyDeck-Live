@@ -398,34 +398,69 @@ function isConnected() {
     );
 }
 
-async function getFollowerCount() {
+async function getAccountInfo() {
     const tokens = await validTokens();
     const url = new URL(CONFIG.userInfoUrl);
-    url.searchParams.set("fields", "follower_count");
+
+    url.searchParams.set(
+        "fields",
+        "display_name,follower_count"
+    );
 
     const response = await fetch(url, {
         headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
+            Authorization:
+                `Bearer ${tokens.accessToken}`
         }
     });
-    const payload = await parseResponse(response);
 
-    if (payload.error?.code && payload.error.code !== "ok") {
+    const payload =
+        await parseResponse(response);
+
+    if (
+        payload.error?.code &&
+        payload.error.code !== "ok"
+    ) {
         throw new Error(
-            payload.error.message || payload.error.code
+            payload.error.message ||
+            payload.error.code
         );
     }
 
-    const count = payload.data?.user?.follower_count;
+    const user =
+        payload.data?.user;
 
-    if (!Number.isFinite(count)) {
+    const followerCount =
+        user?.follower_count;
+
+    if (
+        !Number.isFinite(
+            followerCount
+        )
+    ) {
         throw new Error(
             "TikTok n’a pas renvoyé le nombre d’abonnés."
         );
     }
 
-    return count;
+    return {
+        displayName:
+            String(
+                user?.display_name || ""
+            ).trim(),
+
+        followerCount
+    };
 }
+
+
+async function getFollowerCount() {
+    const account =
+        await getAccountInfo();
+
+    return account.followerCount;
+}
+
 
 async function disconnect() {
     const tokens = loadTokens();
@@ -451,6 +486,7 @@ async function disconnect() {
 module.exports = {
     connect,
     disconnect,
+    getAccountInfo,
     getFollowerCount,
     isConnected
 };

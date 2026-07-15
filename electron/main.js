@@ -994,18 +994,22 @@ app.whenReady().then(
                         return {
                             success: true,
                             connected: false,
+                            displayName: "",
                             followerCount: null
                         };
                     }
 
-                    const followerCount =
+                    const account =
                         await TikTok
-                            .getFollowerCount();
+                            .getAccountInfo();
 
                     return {
                         success: true,
                         connected: true,
-                        followerCount
+                        displayName:
+                            account.displayName,
+                        followerCount:
+                            account.followerCount
                     };
                 } catch (error) {
                     console.error(
@@ -1031,14 +1035,17 @@ app.whenReady().then(
                 try {
                     await TikTok.connect();
 
-                    const followerCount =
+                    const account =
                         await TikTok
-                            .getFollowerCount();
+                            .getAccountInfo();
 
                     return {
                         success: true,
                         connected: true,
-                        followerCount,
+                        displayName:
+                            account.displayName,
+                        followerCount:
+                            account.followerCount,
                         message:
                             "TikTok connecté."
                     };

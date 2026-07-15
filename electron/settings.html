@@ -118,6 +118,13 @@
             color: #ff7b7b;
         }
 
+        .tiktok-identity {
+            margin-top: 5px;
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
         .tiktok-followers {
             margin-top: 4px;
             color: #67dfff;
@@ -400,6 +407,11 @@
                 </div>
 
                 <div
+                    id="tiktokIdentity"
+                    class="tiktok-identity"
+                ></div>
+
+                <div
                     id="tiktokFollowers"
                     class="tiktok-followers"
                 ></div>
@@ -469,6 +481,11 @@
                 "tiktokStatus"
             );
 
+        const tiktokIdentityElement =
+            document.getElementById(
+                "tiktokIdentity"
+            );
+
         const tiktokFollowersElement =
             document.getElementById(
                 "tiktokFollowers"
@@ -509,6 +526,7 @@
 
         function displayTikTokState({
             connected,
+            displayName = "",
             followerCount = null,
             errorMessage = ""
         }) {
@@ -536,6 +554,12 @@
                 tiktokStatusElement
                     .classList
                     .add("error");
+
+                tiktokIdentityElement
+                    .textContent = "";
+
+                tiktokIdentityElement
+                    .textContent = "";
 
                 tiktokFollowersElement
                     .textContent = "";
@@ -570,6 +594,10 @@
                     .add(
                         "connected"
                     );
+
+                tiktokIdentityElement
+                    .textContent =
+                    displayName || "";
 
                 tiktokFollowersElement
                     .textContent =
@@ -634,6 +662,8 @@
                 displayTikTokState({
                     connected:
                         result.connected,
+                    displayName:
+                        result.displayName || "",
                     followerCount:
                         result.followerCount
                 });
@@ -685,6 +715,8 @@
                 displayTikTokState({
                     connected:
                         result.connected,
+                    displayName:
+                        result.displayName || "",
                     followerCount:
                         result.followerCount
                 });
