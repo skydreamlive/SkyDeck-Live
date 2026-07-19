@@ -703,7 +703,7 @@ async function connect() {
             state,
 
             force_verify:
-                "true"
+                "false"
         }).toString();
 
     /*
