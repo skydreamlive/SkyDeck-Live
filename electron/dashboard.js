@@ -837,6 +837,437 @@ document
 
 
 /* ===========================
+   TWITCH
+=========================== */
+
+function getTwitchElements() {
+    return {
+        status: document.getElementById(
+            "twitchStatus"
+        ),
+
+        channel: document.getElementById(
+            "twitchChannelName"
+        ),
+
+        followers: document.getElementById(
+            "twitchFollowers"
+        ),
+
+        live: document.getElementById(
+            "twitchLiveStatus"
+        ),
+
+        connectButton: document.getElementById(
+            "twitchConnect"
+        ),
+
+        refreshButton: document.getElementById(
+            "twitchRefresh"
+        )
+    };
+}
+
+
+function getTwitchChannelName(result) {
+    return result?.channel?.displayName ||
+        result?.channel?.display_name ||
+        result?.channel?.login ||
+        result?.user?.displayName ||
+        result?.user?.display_name ||
+        result?.user?.login ||
+        result?.displayName ||
+        result?.display_name ||
+        result?.login ||
+        "Chaîne connectée";
+}
+
+
+function getTwitchFollowerCount(result) {
+    const value =
+        result?.followerCount ??
+        result?.followers ??
+        result?.channel?.followerCount ??
+        result?.channel?.followers;
+
+    return Number.isFinite(Number(value))
+        ? Number(value)
+        : null;
+}
+
+
+function getTwitchLiveState(result) {
+    const stream =
+        result?.stream ||
+        result?.channel?.stream ||
+        null;
+
+    const isLive = Boolean(
+        result?.isLive ??
+        result?.live ??
+        stream?.isLive ??
+        stream?.is_live ??
+        stream
+    );
+
+    return {
+        isLive,
+        title:
+            result?.streamTitle ||
+            result?.title ||
+            stream?.title ||
+            "",
+        viewers:
+            result?.viewerCount ??
+            result?.viewers ??
+            stream?.viewerCount ??
+            stream?.viewer_count ??
+            null
+    };
+}
+
+
+function displayTwitchDisconnected(
+    message = "Non connecté"
+) {
+    const elements = getTwitchElements();
+
+    if (elements.status) {
+        elements.status.textContent = message;
+
+        setStatusAppearance(
+            elements.status,
+            "stopped"
+        );
+    }
+
+    if (elements.channel) {
+        elements.channel.textContent = "—";
+    }
+
+    if (elements.followers) {
+        elements.followers.textContent = "—";
+    }
+
+    if (elements.live) {
+        elements.live.textContent = "Hors ligne";
+
+        setStatusAppearance(
+            elements.live,
+            "stopped"
+        );
+    }
+
+    if (elements.connectButton) {
+        elements.connectButton.textContent =
+            "Connecter";
+        elements.connectButton.disabled = false;
+        elements.connectButton.dataset.connected =
+            "false";
+    }
+
+    if (elements.refreshButton) {
+        elements.refreshButton.disabled = true;
+    }
+}
+
+
+function displayTwitchConnected(result) {
+    const elements = getTwitchElements();
+    const followerCount =
+        getTwitchFollowerCount(result);
+    const liveState =
+        getTwitchLiveState(result);
+
+    if (elements.status) {
+        elements.status.textContent = "Connecté";
+
+        setStatusAppearance(
+            elements.status,
+            "running"
+        );
+    }
+
+    if (elements.channel) {
+        elements.channel.textContent =
+            getTwitchChannelName(result);
+    }
+
+    if (elements.followers) {
+        elements.followers.textContent =
+            followerCount === null
+                ? "—"
+                : followerCount.toLocaleString(
+                    "fr-FR"
+                );
+    }
+
+    if (elements.live) {
+        if (liveState.isLive) {
+            const viewerText =
+                liveState.viewers === null
+                    ? ""
+                    : ` · ${Number(
+                        liveState.viewers
+                    ).toLocaleString(
+                        "fr-FR"
+                    )} spectateurs`;
+
+            elements.live.textContent =
+                liveState.title
+                    ? `En direct · ${liveState.title}${viewerText}`
+                    : `En direct${viewerText}`;
+
+            setStatusAppearance(
+                elements.live,
+                "running"
+            );
+        } else {
+            elements.live.textContent =
+                "Hors ligne";
+
+            setStatusAppearance(
+                elements.live,
+                "stopped"
+            );
+        }
+    }
+
+    if (elements.connectButton) {
+        elements.connectButton.textContent =
+            "Déconnecter";
+        elements.connectButton.disabled = false;
+        elements.connectButton.dataset.connected =
+            "true";
+    }
+
+    if (elements.refreshButton) {
+        elements.refreshButton.disabled = false;
+        elements.refreshButton.textContent =
+            "Actualiser";
+    }
+}
+
+
+async function refreshTwitchStatus() {
+    if (!window.skyDeckAPI?.twitch) {
+        return;
+    }
+
+    const elements = getTwitchElements();
+
+    if (
+        !elements.status &&
+        !elements.channel &&
+        !elements.followers &&
+        !elements.live &&
+        !elements.connectButton &&
+        !elements.refreshButton
+    ) {
+        return;
+    }
+
+    try {
+        const result =
+            await window.skyDeckAPI
+                .twitch
+                .getStatus();
+
+        const connected = Boolean(
+            result?.connected ??
+            result?.isConnected ??
+            (
+                result?.success &&
+                (
+                    result?.channel ||
+                    result?.user ||
+                    result?.login
+                )
+            )
+        );
+
+        if (!connected) {
+            displayTwitchDisconnected(
+                result?.message ||
+                "Non connecté"
+            );
+
+            return;
+        }
+
+        let completeResult = result;
+
+        try {
+            const followersResult =
+                await window.skyDeckAPI
+                    .twitch
+                    .getFollowers();
+
+            if (
+                followersResult &&
+                followersResult.followerCount !==
+                    undefined
+            ) {
+                completeResult = {
+                    ...result,
+                    followerCount:
+                        followersResult
+                            .followerCount
+                };
+            }
+        } catch (error) {
+            console.warn(
+                "Abonnés Twitch indisponibles :",
+                error
+            );
+        }
+
+        displayTwitchConnected(
+            completeResult
+        );
+    } catch (error) {
+        console.error(
+            "Erreur état Twitch :",
+            error
+        );
+
+        displayTwitchDisconnected(
+            "Erreur"
+        );
+
+        if (elements.status) {
+            setStatusAppearance(
+                elements.status,
+                "error"
+            );
+        }
+    }
+}
+
+
+const twitchConnectButton =
+    document.getElementById(
+        "twitchConnect"
+    );
+
+if (twitchConnectButton) {
+    twitchConnectButton.addEventListener(
+        "click",
+        async event => {
+            const button = event.currentTarget;
+            const connected =
+                button.dataset.connected ===
+                "true";
+
+            button.disabled = true;
+            button.textContent = connected
+                ? "Déconnexion..."
+                : "Connexion...";
+
+            try {
+                const result = connected
+                    ? await window.skyDeckAPI
+                        .twitch
+                        .disconnect()
+                    : await window.skyDeckAPI
+                        .twitch
+                        .connect();
+
+                if (result?.success === false) {
+                    throw new Error(
+                        result.message ||
+                        "Action Twitch impossible."
+                    );
+                }
+
+                await refreshTwitchStatus();
+            } catch (error) {
+                console.error(
+                    "Erreur connexion Twitch :",
+                    error
+                );
+
+                const elements =
+                    getTwitchElements();
+
+                if (elements.status) {
+                    elements.status.textContent =
+                        "Erreur";
+
+                    setStatusAppearance(
+                        elements.status,
+                        "error"
+                    );
+                }
+
+                button.disabled = false;
+                button.textContent = connected
+                    ? "Déconnecter"
+                    : "Réessayer";
+            }
+        }
+    );
+}
+
+
+const twitchRefreshButton =
+    document.getElementById(
+        "twitchRefresh"
+    );
+
+if (twitchRefreshButton) {
+    twitchRefreshButton.addEventListener(
+        "click",
+        async event => {
+            const button = event.currentTarget;
+
+            button.disabled = true;
+            button.textContent =
+                "Actualisation...";
+
+            try {
+                const result =
+                    await window.skyDeckAPI
+                        .twitch
+                        .refresh();
+
+                if (result?.success === false) {
+                    throw new Error(
+                        result.message ||
+                        "Actualisation Twitch impossible."
+                    );
+                }
+
+                await refreshTwitchStatus();
+            } catch (error) {
+                console.error(
+                    "Erreur actualisation Twitch :",
+                    error
+                );
+
+                const elements =
+                    getTwitchElements();
+
+                if (elements.status) {
+                    elements.status.textContent =
+                        "Erreur";
+
+                    setStatusAppearance(
+                        elements.status,
+                        "error"
+                    );
+                }
+            } finally {
+                button.disabled = false;
+                button.textContent =
+                    "Actualiser";
+            }
+        }
+    );
+}
+
+
+/* ===========================
    PARAMÈTRES
 =========================== */
 
@@ -867,7 +1298,10 @@ document
 
 window.addEventListener(
     "focus",
-    refreshAll
+    async () => {
+        await refreshAll();
+        await refreshTwitchStatus();
+    }
 );
 
 
@@ -881,9 +1315,16 @@ async function initializeDashboard() {
         await refreshStatuses();
     }
 
+    await refreshTwitchStatus();
+
     window.setInterval(
         refreshAll,
         3000
+    );
+
+    window.setInterval(
+        refreshTwitchStatus,
+        30000
     );
 }
 

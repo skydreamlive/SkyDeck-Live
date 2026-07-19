@@ -129,6 +129,56 @@
                 </button>
             </div>
 
+            <div class="status">
+                <div class="program-info">
+                    <span class="program-name">
+                        Twitch
+                    </span>
+
+                    <strong
+                        id="twitchStatus"
+                        class="program-status stopped"
+                    >
+                        Non connecté
+                    </strong>
+
+                    <span class="program-name">
+                        Chaîne :
+                        <strong id="twitchChannelName">—</strong>
+                    </span>
+
+                    <span class="program-name">
+                        Followers :
+                        <strong id="twitchFollowers">—</strong>
+                    </span>
+
+                    <strong
+                        id="twitchLiveStatus"
+                        class="program-status stopped"
+                    >
+                        Hors ligne
+                    </strong>
+                </div>
+
+                <button
+                    id="twitchConnect"
+                    class="program-button"
+                    type="button"
+                    data-connected="false"
+                >
+                    Connecter
+                </button>
+
+                <button
+                    id="twitchRefresh"
+                    class="program-button"
+                    type="button"
+                    disabled
+                >
+                    Actualiser
+                </button>
+            </div>
+
             <div
                 id="dynamicProgramsAnchor"
                 hidden

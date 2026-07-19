@@ -86,6 +86,33 @@ contextBridge.exposeInMainWorld(
                 ipcRenderer.invoke(
                     "tiktok-followers"
                 )
+        },
+
+        twitch: {
+            getStatus: () =>
+                ipcRenderer.invoke(
+                    "twitch-status"
+                ),
+
+            connect: () =>
+                ipcRenderer.invoke(
+                    "twitch-connect"
+                ),
+
+            disconnect: () =>
+                ipcRenderer.invoke(
+                    "twitch-disconnect"
+                ),
+
+            refresh: () =>
+                ipcRenderer.invoke(
+                    "twitch-refresh"
+                ),
+
+            getFollowers: () =>
+                ipcRenderer.invoke(
+                    "twitch-followers"
+                )
         }
     }
 );

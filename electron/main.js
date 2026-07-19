@@ -33,6 +33,9 @@ const {
 const TikTok =
     require("./services/tiktok");
 
+const Twitch =
+    require("./services/twitch");
+
 
 /* ===========================
    CACHE ELECTRON
@@ -1370,6 +1373,75 @@ app.whenReady().then(
                         success: false,
                         connected:
                             TikTok.isConnected(),
+                        followerCount: null,
+                        message:
+                            error.message
+                    };
+                }
+            }
+        );
+
+
+        /* ===========================
+           TWITCH
+        =========================== */
+
+        ipcMain.handle(
+            "twitch-status",
+            async () => {
+                return await Twitch.getStatus();
+            }
+        );
+
+        ipcMain.handle(
+            "twitch-connect",
+            async () => {
+                return await Twitch.connect();
+            }
+        );
+
+        ipcMain.handle(
+            "twitch-disconnect",
+            async () => {
+                return await Twitch.disconnect();
+            }
+        );
+
+        ipcMain.handle(
+            "twitch-refresh",
+            async () => {
+                return await Twitch.refreshChannel();
+            }
+        );
+
+        ipcMain.handle(
+            "twitch-followers",
+            async () => {
+                try {
+                    const followerCount =
+                        await Twitch
+                            .getFollowerCount();
+
+                    return {
+                        success: true,
+                        connected:
+                            followerCount !== null,
+                        followerCount
+                    };
+                } catch (error) {
+                    console.error(
+                        "Erreur abonnés Twitch :",
+                        error
+                    );
+
+                    const connected =
+                        await Twitch
+                            .isConnected()
+                            .catch(() => false);
+
+                    return {
+                        success: false,
+                        connected,
                         followerCount: null,
                         message:
                             error.message
