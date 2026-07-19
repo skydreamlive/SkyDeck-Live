@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld(
                 "open-settings"
             ),
 
+        openChat: () =>
+            ipcRenderer.invoke(
+                "open-chat"
+            ),
+
         launchProgram: programId =>
             ipcRenderer.invoke(
                 "launch-program",

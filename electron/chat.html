@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>SkyDeck Live - Chat TikTok</title>
+
+    <link
+        rel="stylesheet"
+        href="./chat.css"
+    >
+
+    <script src="../config.js"></script>
+    <script src="./chat.js" defer></script>
+</head>
+
+<body>
+    <main class="chat-shell">
+        <header class="chat-header">
+            <div>
+                <div class="eyebrow">
+                    SKYDECK LIVE
+                </div>
+
+                <h1>Chat TikTok</h1>
+            </div>
+
+            <div
+                id="connectionStatus"
+                class="connection-status disconnected"
+                role="status"
+                aria-live="polite"
+            >
+                Connexion…
+            </div>
+        </header>
+
+        <section
+            id="messages"
+            class="messages"
+            aria-label="Messages du direct TikTok"
+            aria-live="polite"
+        >
+            <div
+                id="emptyState"
+                class="empty-state"
+            >
+                <strong>En attente du direct</strong>
+                <span>
+                    Les messages TikFinity apparaîtront ici.
+                </span>
+            </div>
+        </section>
+
+        <footer class="chat-footer">
+            <span id="scrollHint">
+                Défilement automatique activé
+            </span>
+
+            <button
+                id="scrollToLatest"
+                type="button"
+                hidden
+            >
+                Revenir aux nouveaux messages
+            </button>
+        </footer>
+    </main>
+</body>
+</html>

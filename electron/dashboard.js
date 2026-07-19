@@ -691,6 +691,75 @@ document
 
 
 /* ===========================
+   CHAT TIKTOK
+=========================== */
+
+document
+    .getElementById(
+        "openChat"
+    )
+    .addEventListener(
+        "click",
+        async event => {
+            const button =
+                event.currentTarget;
+
+            const status =
+                document.getElementById(
+                    "chatStatus"
+                );
+
+            button.disabled = true;
+            button.textContent =
+                "Ouverture...";
+
+            try {
+                const result =
+                    await window
+                        .skyDeckAPI
+                        .openChat();
+
+                if (!result.success) {
+                    throw new Error(
+                        result.message ||
+                        "Ouverture impossible."
+                    );
+                }
+
+                status.textContent =
+                    "Ouvert au premier plan";
+
+                setStatusAppearance(
+                    status,
+                    "running"
+                );
+
+                button.textContent =
+                    "Afficher";
+            } catch (error) {
+                console.error(
+                    "Erreur ouverture du chat :",
+                    error
+                );
+
+                status.textContent =
+                    "Erreur";
+
+                setStatusAppearance(
+                    status,
+                    "error"
+                );
+
+                button.textContent =
+                    "Réessayer";
+            } finally {
+                button.disabled = false;
+            }
+        }
+    );
+
+
+/* ===========================
    RESTREAM
 =========================== */
 

@@ -7,7 +7,8 @@ const {
     BrowserWindow,
     ipcMain,
     shell,
-    dialog
+    dialog,
+    screen
 } = require("electron");
 
 const {
@@ -370,6 +371,14 @@ function stopOverlayServer() {
 let dashboardWindow = null;
 let overlayWindow = null;
 let settingsWindow = null;
+let chatWindow = null;
+
+const CHAT_DEFAULT_BOUNDS = {
+    width: 430,
+    height: 650
+};
+
+let chatBoundsSaveTimer = null;
 
 
 /* ===========================
@@ -471,6 +480,228 @@ function createOverlayWindow() {
         success: true,
         alreadyRunning: false,
         message: "Overlay ouvert."
+    };
+}
+
+
+/* ===========================
+   CHAT TIKTOK FLOTTANT
+=========================== */
+
+function getChatBoundsFilePath() {
+    return path.join(
+        app.getPath("userData"),
+        "chat-window-bounds.json"
+    );
+}
+
+
+function isBoundsVisible(bounds) {
+    if (!bounds) {
+        return false;
+    }
+
+    return screen
+        .getAllDisplays()
+        .some(display => {
+            const area = display.workArea;
+
+            return (
+                bounds.x < area.x + area.width - 80 &&
+                bounds.x + bounds.width > area.x + 80 &&
+                bounds.y < area.y + area.height - 60 &&
+                bounds.y + bounds.height > area.y + 40
+            );
+        });
+}
+
+
+function loadChatBounds() {
+    try {
+        const filePath =
+            getChatBoundsFilePath();
+
+        if (!fs.existsSync(filePath)) {
+            return CHAT_DEFAULT_BOUNDS;
+        }
+
+        const savedBounds = JSON.parse(
+            fs.readFileSync(filePath, "utf8")
+        );
+
+        if (!isBoundsVisible(savedBounds)) {
+            return CHAT_DEFAULT_BOUNDS;
+        }
+
+        return {
+            x: Number(savedBounds.x),
+            y: Number(savedBounds.y),
+            width: Math.max(
+                320,
+                Number(savedBounds.width) ||
+                    CHAT_DEFAULT_BOUNDS.width
+            ),
+            height: Math.max(
+                360,
+                Number(savedBounds.height) ||
+                    CHAT_DEFAULT_BOUNDS.height
+            )
+        };
+    } catch (error) {
+        console.error(
+            "Lecture de la position du chat impossible :",
+            error
+        );
+
+        return CHAT_DEFAULT_BOUNDS;
+    }
+}
+
+
+function saveChatBounds() {
+    if (
+        !chatWindow ||
+        chatWindow.isDestroyed() ||
+        chatWindow.isMinimized()
+    ) {
+        return;
+    }
+
+    try {
+        const filePath =
+            getChatBoundsFilePath();
+
+        fs.mkdirSync(
+            path.dirname(filePath),
+            { recursive: true }
+        );
+
+        fs.writeFileSync(
+            filePath,
+            JSON.stringify(
+                chatWindow.getBounds(),
+                null,
+                2
+            ),
+            "utf8"
+        );
+    } catch (error) {
+        console.error(
+            "Enregistrement de la position du chat impossible :",
+            error
+        );
+    }
+}
+
+
+function scheduleChatBoundsSave() {
+    if (chatBoundsSaveTimer) {
+        clearTimeout(chatBoundsSaveTimer);
+    }
+
+    chatBoundsSaveTimer = setTimeout(
+        saveChatBounds,
+        250
+    );
+}
+
+
+function createChatWindow() {
+    if (
+        chatWindow &&
+        !chatWindow.isDestroyed()
+    ) {
+        if (chatWindow.isMinimized()) {
+            chatWindow.restore();
+        }
+
+        chatWindow.show();
+        chatWindow.moveTop();
+
+        return {
+            success: true,
+            alreadyRunning: true,
+            message: "Chat TikTok déjà ouvert."
+        };
+    }
+
+    const savedBounds = loadChatBounds();
+
+    chatWindow = new BrowserWindow({
+        ...savedBounds,
+        minWidth: 320,
+        minHeight: 360,
+        title: "SkyDeck Live - Chat TikTok",
+        backgroundColor: "#081018",
+        alwaysOnTop: true,
+        movable: true,
+        resizable: true,
+        minimizable: true,
+        maximizable: false,
+        fullscreenable: false,
+        autoHideMenuBar: true,
+        show: false,
+
+        webPreferences: {
+            preload: path.join(
+                __dirname,
+                "preload.js"
+            ),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
+    });
+
+    chatWindow.setAlwaysOnTop(
+        true,
+        "screen-saver"
+    );
+
+    chatWindow.loadFile(
+        path.join(
+            __dirname,
+            "chat.html"
+        )
+    );
+
+    chatWindow.once(
+        "ready-to-show",
+        () => {
+            if (
+                chatWindow &&
+                !chatWindow.isDestroyed()
+            ) {
+                chatWindow.show();
+            }
+        }
+    );
+
+    chatWindow.on(
+        "move",
+        scheduleChatBoundsSave
+    );
+
+    chatWindow.on(
+        "resize",
+        scheduleChatBoundsSave
+    );
+
+    chatWindow.on(
+        "close",
+        saveChatBounds
+    );
+
+    chatWindow.on(
+        "closed",
+        () => {
+            chatWindow = null;
+        }
+    );
+
+    return {
+        success: true,
+        alreadyRunning: false,
+        message: "Chat TikTok ouvert."
     };
 }
 
@@ -789,6 +1020,13 @@ app.whenReady().then(
             "launch-overlay",
             async () => {
                 return createOverlayWindow();
+            }
+        );
+
+        ipcMain.handle(
+            "open-chat",
+            async () => {
+                return createChatWindow();
             }
         );
 
