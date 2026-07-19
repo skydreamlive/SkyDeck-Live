@@ -2,72 +2,77 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkyDeck Live - Chat TikTok</title>
-
-    <link
-        rel="stylesheet"
-        href="./chat.css"
-    >
-
+    <link rel="stylesheet" href="./chat.css">
     <script src="../config.js"></script>
     <script src="./chat.js" defer></script>
 </head>
-
 <body>
     <main class="chat-shell">
         <header class="chat-header">
-            <div>
-                <div class="eyebrow">
-                    SKYDECK LIVE
-                </div>
-
+            <div class="title-block">
+                <div class="eyebrow">SKYDECK LIVE</div>
                 <h1>Chat TikTok</h1>
             </div>
 
-            <div
-                id="connectionStatus"
-                class="connection-status disconnected"
-                role="status"
-                aria-live="polite"
-            >
-                Connexion…
+            <div class="header-actions">
+                <div id="connectionStatus" class="connection-status disconnected" role="status" aria-live="polite">
+                    Connexion…
+                </div>
+                <button id="settingsButton" class="icon-button" type="button" aria-label="Ouvrir les paramètres" title="Paramètres">
+                    ⚙
+                </button>
             </div>
         </header>
 
-        <section
-            id="messages"
-            class="messages"
-            aria-label="Messages du direct TikTok"
-            aria-live="polite"
-        >
-            <div
-                id="emptyState"
-                class="empty-state"
-            >
+        <section id="settingsPanel" class="settings-panel" hidden aria-label="Paramètres du chat">
+            <div class="settings-title-row">
+                <strong>Paramètres du chat</strong>
+                <button id="closeSettingsButton" class="icon-button" type="button" aria-label="Fermer les paramètres">✕</button>
+            </div>
+
+            <div class="settings-grid">
+                <label class="setting-check"><input id="showAvatars" type="checkbox"> Afficher les photos de profil</label>
+                <label class="setting-check"><input id="showTime" type="checkbox"> Afficher l’heure</label>
+                <label class="setting-check"><input id="showChat" type="checkbox"> Messages</label>
+                <label class="setting-check"><input id="showFollows" type="checkbox"> Abonnements</label>
+                <label class="setting-check"><input id="showGifts" type="checkbox"> Cadeaux</label>
+                <label class="setting-check"><input id="showShares" type="checkbox"> Partages</label>
+                <label class="setting-check"><input id="showLikes" type="checkbox"> Likes</label>
+                <label class="setting-check"><input id="showJoins" type="checkbox"> Arrivées</label>
+            </div>
+
+            <label class="range-setting" for="fontSize">
+                <span>Taille du texte <output id="fontSizeValue"></output></span>
+                <input id="fontSize" type="range" min="12" max="24" step="1">
+            </label>
+
+            <label class="range-setting" for="backgroundOpacity">
+                <span>Opacité du fond <output id="backgroundOpacityValue"></output></span>
+                <input id="backgroundOpacity" type="range" min="35" max="100" step="5">
+            </label>
+
+            <label class="number-setting" for="maxMessages">
+                <span>Messages conservés</span>
+                <input id="maxMessages" type="number" min="25" max="500" step="25">
+            </label>
+
+            <div class="settings-actions">
+                <button id="resetSettingsButton" type="button">Valeurs par défaut</button>
+            </div>
+        </section>
+
+        <section id="messages" class="messages" aria-label="Messages du direct TikTok" aria-live="polite">
+            <div id="emptyState" class="empty-state">
                 <strong>En attente du direct</strong>
-                <span>
-                    Les messages TikFinity apparaîtront ici.
-                </span>
+                <span>Les messages TikFinity apparaîtront ici.</span>
             </div>
         </section>
 
         <footer class="chat-footer">
-            <span id="scrollHint">
-                Défilement automatique activé
-            </span>
-
-            <button
-                id="scrollToLatest"
-                type="button"
-                hidden
-            >
-                Revenir aux nouveaux messages
-            </button>
+            <span id="scrollHint">Défilement automatique activé</span>
+            <button id="scrollToLatest" type="button" hidden>Revenir aux nouveaux messages</button>
         </footer>
     </main>
 </body>
