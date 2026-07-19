@@ -104,39 +104,49 @@ function sendJson(
 function resolveOverlayFile(
     requestPath
 ) {
-    const projectRoot =
-        path.join(
-            __dirname,
-            ".."
-        );
-
     const normalizedPath =
         requestPath === "/"
             ? "/index.html"
             : requestPath;
 
-    const decodedPath =
-        decodeURIComponent(
-            normalizedPath
-                .split("?")[0]
+    let decodedPath;
+
+    try {
+        decodedPath = decodeURIComponent(
+            normalizedPath.split("?")[0]
         );
+    } catch (_error) {
+        return null;
+    }
 
     const relativePath =
-        decodedPath
-            .replace(/^\/+/, "");
+        decodedPath.replace(/^\/+/, "");
 
-    const filePath =
-        path.resolve(
-            projectRoot,
-            relativePath
-        );
+    /*
+     * Les fichiers de l’overlay principal (index.html, js, css...)
+     * sont à la racine du projet, tandis que les ressources Electron
+     * sont stockées dans electron/assets.
+     */
+    const rootDirectory =
+        relativePath === "assets" ||
+        relativePath.startsWith("assets/")
+            ? __dirname
+            : path.resolve(__dirname, "..");
+
+    const filePath = path.resolve(
+        rootDirectory,
+        relativePath
+    );
+
+    const allowedRoot =
+        path.resolve(rootDirectory);
+
+    const relativeToRoot =
+        path.relative(allowedRoot, filePath);
 
     if (
-        !filePath.startsWith(
-            path.resolve(
-                projectRoot
-            )
-        )
+        relativeToRoot.startsWith("..") ||
+        path.isAbsolute(relativeToRoot)
     ) {
         return null;
     }
