@@ -12,3 +12,13 @@
     margin: auto;
     border-radius: 22px;
 }
+
+.legal-logo {
+    display: block;
+    width: 112px;
+    height: 112px;
+    margin: 0 0 24px;
+    border-radius: 22px;
+    object-fit: cover;
+    box-shadow: 0 0 24px rgba(0, 191, 255, .22);
+}
